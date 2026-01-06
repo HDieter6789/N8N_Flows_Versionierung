@@ -1,0 +1,82 @@
+{
+  "id": "BjxyZNurkJ6DYEvE",
+  "name": "Marketing Master Flow",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "2fb8c2f8-7174-405a-8a11-6424dc79d6f5",
+  "activeVersionId": null,
+  "versionCounter": 3,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-01-04T14:45:30.830Z",
+      "createdAt": "2026-01-04T14:45:30.830Z",
+      "role": "workflow:owner",
+      "workflowId": "BjxyZNurkJ6DYEvE",
+      "projectId": "pdXrHuiVvp9F1fDE",
+      "project": {
+        "updatedAt": "2025-11-18T18:05:08.560Z",
+        "createdAt": "2025-11-18T17:59:43.858Z",
+        "id": "pdXrHuiVvp9F1fDE",
+        "name": "Sebastian Ohl <s.ohl.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-18T17:59:43.858Z",
+            "createdAt": "2025-11-18T17:59:43.858Z",
+            "userId": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+            "projectId": "pdXrHuiVvp9F1fDE",
+            "user": {
+              "updatedAt": "2026-01-04T14:36:53.471Z",
+              "createdAt": "2025-11-18T17:59:43.858Z",
+              "id": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+              "email": "s.ohl.hom@gmail.com",
+              "firstName": "Sebastian",
+              "lastName": "Ohl",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-18T18:05:28.706Z",
+                "personalization_survey_n8n_version": "1.120.3"
+              },
+              "settings": null,
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-04",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [
+    {
+      "updatedAt": "2025-12-20T14:11:24.223Z",
+      "createdAt": "2025-12-20T14:11:24.223Z",
+      "id": "1OKj3IgxVgtVBEFX",
+      "name": "Sebastian"
+    },
+    {
+      "updatedAt": "2025-12-20T14:11:52.711Z",
+      "createdAt": "2025-12-20T14:11:52.711Z",
+      "id": "QyPZPNFzkantcMoA",
+      "name": "Marketing"
+    }
+  ],
+  "activeVersion": null
+}
+
+
