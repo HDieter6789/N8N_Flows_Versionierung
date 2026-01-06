@@ -1,0 +1,1136 @@
+{
+  "id": "8eJQrmHljvdmQvpR",
+  "name": "Chatbot Orchestration Flow",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "content": "Router: Supabase Wissensdatenbank oder Groq AI",
+        "height": 560,
+        "width": 1872,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -208,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "e81ee06c-e76f-4706-a4ee-b9c15696ea9b",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "213b66e1-3bef-43a4-a7fb-122ebc860f3d",
+      "name": "Extract Question",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        144,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "chat_cache",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "question",
+              "condition": "ilike",
+              "keyValue": "=%{{ $json.question }}%"
+            }
+          ]
+        }
+      },
+      "id": "2b0b3cee-466b-4d66-b491-f3f34f5d4fab",
+      "name": "Supabase - Search Cache",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        336,
+        -176
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-data",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "exists",
+                "operation": "exists"
+              }
+            },
+            {
+              "id": "has-answer",
+              "leftValue": "={{ $json.answer }}",
+              "rightValue": "",
+              "operator": {
+                "type": "exists",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "174b20d6-6abc-43b9-b6d6-2d1eb3fddca7",
+      "name": "Cache Hit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "chat_cache",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "used_count",
+              "fieldValue": "={{ $json.used_count + 1 }}"
+            },
+            {
+              "fieldId": "last_used_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "5a5f6afb-8771-4a06-a1ec-7b3b4a07b2d7",
+      "name": "Update Cache Counter",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        672,
+        -144
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"answer\": $json.answer, \"cached\": true, \"source\": \"cache\", \"usedCount\": $json.used_count + 1 } }}",
+        "options": {}
+      },
+      "id": "efb074d1-d6b3-4a11-a9db-20ca9826765f",
+      "name": "Return Cached Answer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        880,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "groqApi",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.1-8b-instant"
+            },
+            {
+              "name": "messages",
+              "value": "={{ [{\"role\": \"system\", \"content\": \"Du bist der offizielle Kundenservice-Assistent der H.O.M. Smart Service UG. KOMMUNIKATIONSSTIL: Antworte kurz, sachlich und präzise. Vermeide ausschweifende Erklärungen. BEGRÜSSUNG: Beginne jede neue Konversation mit: 'Hallo! Wie kann ich Ihnen helfen?' THEMENFOKUS: Beantworte NUR die gestellte Frage. Schweife nicht zu anderen Themen ab. WISSENSGRENZEN: Wenn du eine Antwort nicht kennst oder unsicher bist, sage ehrlich: 'Diese Information kann ich Ihnen leider nicht geben. Ich leite Sie an einen Sachbearbeiter weiter, der Ihnen weiterhelfen kann.'\"}, {\"role\": \"user\", \"content\": $('Extract Question').item.json.question}] }}"
+            },
+            {
+              "name": "temperature",
+              "value": "0.7"
+            },
+            {
+              "name": "max_tokens",
+              "value": "500"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "89a1c8e5-5ad5-46d0-a77d-05b5b696456f",
+      "name": "Groq Chat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        672,
+        48
+      ],
+      "credentials": {
+        "groqApi": {
+          "id": "vlI0QcvoBqGHigDb",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c7e34d66-cdac-4e40-bec7-158572e9886d",
+      "name": "Extract Groq Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        880,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "chat_cache",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "question",
+              "fieldValue": "={{ $json.question }}"
+            },
+            {
+              "fieldId": "answer",
+              "fieldValue": "={{ $json.answer }}"
+            },
+            {
+              "fieldId": "chatflow_id",
+              "fieldValue": "18a19299-c1d4-4eee-9b37-dc915dd33fd5"
+            },
+            {
+              "fieldId": "used_count",
+              "fieldValue": "1"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "last_used_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "c4ca4ae5-61e8-4207-aa2c-8e043812128a",
+      "name": "Save to Cache",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        48
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "chat_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $json.session_id }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "user"
+            },
+            {
+              "fieldId": "input_content",
+              "fieldValue": "=[USER]: {{ $json.question }}"
+            },
+            {
+              "fieldId": "output_content"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "f2bbc171-64a6-45fe-9cfe-9ad96b780cc9",
+      "name": "Save to Messages - User",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -128
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "chat_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Extract Groq Response').item.json.session_id }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "assistant"
+            },
+            {
+              "fieldId": "input_content",
+              "fieldValue": "={{ $('Extract Groq Response').item.json.question }}"
+            },
+            {
+              "fieldId": "output_content",
+              "fieldValue": "={{ $('Extract Groq Response').item.json.answer }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "fdeb849b-7300-4eaa-a8d8-8bc63684e737",
+      "name": "Save to Messages - Assistant",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1280,
+        160
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"answer\": $('Extract Groq Response').item.json.answer, \"cached\": false, \"source\": \"groq\" } }}",
+        "options": {}
+      },
+      "id": "2a333a0a-ee11-46f2-ab2b-eff2828a6817",
+      "name": "Return Groq Answer",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1472,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "50d19cb1-89c7-409f-9099-85813ad4ab74",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        -48
+      ],
+      "id": "71c7eed1-cc7c-4633-8a14-f58c17dc7be2",
+      "name": "Webhook",
+      "webhookId": "50d19cb1-89c7-409f-9099-85813ad4ab74"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        416,
+        112
+      ],
+      "id": "ab847c1f-4978-413b-a9ed-94e9081c9959",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function Node Code:\nconst question = $input.first().json.question;\n\nconsole.log(\"=== WEBHOOK TRIGGERED ===\");\nconsole.log(\"Question received:\", question);\nconsole.log(\"Full input:\", JSON.stringify($input.first().json, null, 2));\n\n// Weitergeben\nreturn {\n  question: question,\n  rawInput: $input.first().json\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        128,
+        64
+      ],
+      "id": "8d48a807-3a1b-43c4-8989-d4f7609217c7",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "connections": {
+    "Extract Question": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Search Cache",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Search Cache": {
+      "main": [
+        [
+          {
+            "node": "Cache Hit?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cache Hit?": {
+      "main": [
+        [
+          {
+            "node": "Update Cache Counter",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Groq Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Cache Counter": {
+      "main": [
+        [
+          {
+            "node": "Return Cached Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat": {
+      "main": [
+        [
+          {
+            "node": "Extract Groq Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Groq Response": {
+      "main": [
+        [
+          {
+            "node": "Save to Cache",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save to Messages - User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Cache": {
+      "main": [
+        [
+          {
+            "node": "Save to Messages - Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Messages - Assistant": {
+      "main": [
+        [
+          {
+            "node": "Return Groq Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "b8095615-bbcf-436f-b929-3c2526b855b9",
+  "activeVersionId": "5373ad12-9855-4e78-938d-8cda0842ec4d",
+  "versionCounter": 8,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-01-04T17:28:11.772Z",
+      "createdAt": "2026-01-04T17:28:11.772Z",
+      "role": "workflow:owner",
+      "workflowId": "8eJQrmHljvdmQvpR",
+      "projectId": "OE5UygYAfmxdsAr7",
+      "project": {
+        "updatedAt": "2025-11-17T16:10:22.285Z",
+        "createdAt": "2025-11-17T16:07:40.393Z",
+        "id": "OE5UygYAfmxdsAr7",
+        "name": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail <jan.alexander.herrmann.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-17T16:07:40.393Z",
+            "createdAt": "2025-11-17T16:07:40.393Z",
+            "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+            "projectId": "OE5UygYAfmxdsAr7",
+            "user": {
+              "updatedAt": "2026-01-06T14:03:25.964Z",
+              "createdAt": "2025-11-17T16:07:38.239Z",
+              "id": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+              "email": "jan.alexander.herrmann.hom@gmail.com",
+              "firstName": "Jan-Alexander",
+              "lastName": "Jan.Alexander.herrmann.hom@gmail",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-17T16:10:51.964Z",
+                "personalization_survey_n8n_version": "1.119.2",
+                "companySize": "<20",
+                "companyType": "systems-integrator",
+                "role": "business-owner",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "Fl2F01hIt6DphtCw",
+                "userActivatedAt": 1763665359540,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1765391968130
+                },
+                "easyAIWorkflowOnboarded": true
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-06",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-01-04T17:38:38.689Z",
+    "createdAt": "2026-01-04T17:28:42.173Z",
+    "versionId": "5373ad12-9855-4e78-938d-8cda0842ec4d",
+    "workflowId": "8eJQrmHljvdmQvpR",
+    "nodes": [
+      {
+        "parameters": {
+          "content": "Router: Supabase Wissensdatenbank oder Groq AI",
+          "height": 560,
+          "width": 1872,
+          "color": 6
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "position": [
+          -208,
+          -208
+        ],
+        "typeVersion": 1,
+        "id": "e81ee06c-e76f-4706-a4ee-b9c15696ea9b",
+        "name": "Sticky Note4"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "213b66e1-3bef-43a4-a7fb-122ebc860f3d",
+        "name": "Extract Question",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3,
+        "position": [
+          96,
+          -48
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "chat_cache",
+          "limit": 1,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "question",
+                "condition": "ilike",
+                "keyValue": "=%{{ $json.question }}%"
+              }
+            ]
+          }
+        },
+        "id": "2b0b3cee-466b-4d66-b491-f3f34f5d4fab",
+        "name": "Supabase - Search Cache",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          272,
+          -48
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "leftValue": "",
+              "caseSensitive": true,
+              "typeValidation": "strict"
+            },
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "has-data",
+                "leftValue": "={{ $json.id }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "exists",
+                  "operation": "exists"
+                }
+              },
+              {
+                "id": "has-answer",
+                "leftValue": "={{ $json.answer }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "exists",
+                  "operation": "notEmpty"
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "174b20d6-6abc-43b9-b6d6-2d1eb3fddca7",
+        "name": "Cache Hit?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          480,
+          -48
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "chat_cache",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "used_count",
+                "fieldValue": "={{ $json.used_count + 1 }}"
+              },
+              {
+                "fieldId": "last_used_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "5a5f6afb-8771-4a06-a1ec-7b3b4a07b2d7",
+        "name": "Update Cache Counter",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          672,
+          -144
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"answer\": $json.answer, \"cached\": true, \"source\": \"cache\", \"usedCount\": $json.used_count + 1 } }}",
+          "options": {}
+        },
+        "id": "efb074d1-d6b3-4a11-a9db-20ca9826765f",
+        "name": "Return Cached Answer",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          880,
+          -144
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://api.groq.com/openai/v1/chat/completions",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "groqApi",
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "model",
+                "value": "llama-3.1-8b-instant"
+              },
+              {
+                "name": "messages",
+                "value": "={{ [{\"role\": \"system\", \"content\": \"Du bist der offizielle Kundenservice-Assistent der H.O.M. Smart Service UG. KOMMUNIKATIONSSTIL: Antworte kurz, sachlich und präzise. Vermeide ausschweifende Erklärungen. BEGRÜSSUNG: Beginne jede neue Konversation mit: 'Hallo! Wie kann ich Ihnen helfen?' THEMENFOKUS: Beantworte NUR die gestellte Frage. Schweife nicht zu anderen Themen ab. WISSENSGRENZEN: Wenn du eine Antwort nicht kennst oder unsicher bist, sage ehrlich: 'Diese Information kann ich Ihnen leider nicht geben. Ich leite Sie an einen Sachbearbeiter weiter, der Ihnen weiterhelfen kann.'\"}, {\"role\": \"user\", \"content\": $('Extract Question').item.json.question}] }}"
+              },
+              {
+                "name": "temperature",
+                "value": "0.7"
+              },
+              {
+                "name": "max_tokens",
+                "value": "500"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "89a1c8e5-5ad5-46d0-a77d-05b5b696456f",
+        "name": "Groq Chat",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          672,
+          48
+        ],
+        "credentials": {
+          "groqApi": {
+            "id": "vlI0QcvoBqGHigDb",
+            "name": "Groq account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "id": "c7e34d66-cdac-4e40-bec7-158572e9886d",
+        "name": "Extract Groq Response",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3,
+        "position": [
+          880,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "tableId": "chat_cache",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "question",
+                "fieldValue": "={{ $json.question }}"
+              },
+              {
+                "fieldId": "answer",
+                "fieldValue": "={{ $json.answer }}"
+              },
+              {
+                "fieldId": "chatflow_id",
+                "fieldValue": "18a19299-c1d4-4eee-9b37-dc915dd33fd5"
+              },
+              {
+                "fieldId": "used_count",
+                "fieldValue": "1"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              },
+              {
+                "fieldId": "last_used_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "c4ca4ae5-61e8-4207-aa2c-8e043812128a",
+        "name": "Save to Cache",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1072,
+          48
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "tableId": "chat_messages",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "session_id",
+                "fieldValue": "={{ $json.session_id }}"
+              },
+              {
+                "fieldId": "role",
+                "fieldValue": "user"
+              },
+              {
+                "fieldId": "input_content",
+                "fieldValue": "=[USER]: {{ $json.question }}"
+              },
+              {
+                "fieldId": "output_content"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "f2bbc171-64a6-45fe-9cfe-9ad96b780cc9",
+        "name": "Save to Messages - User",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1184,
+          -128
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "tableId": "chat_messages",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "session_id",
+                "fieldValue": "={{ $('Extract Groq Response').item.json.session_id }}"
+              },
+              {
+                "fieldId": "role",
+                "fieldValue": "assistant"
+              },
+              {
+                "fieldId": "input_content",
+                "fieldValue": "={{ $('Extract Groq Response').item.json.question }}"
+              },
+              {
+                "fieldId": "output_content",
+                "fieldValue": "={{ $('Extract Groq Response').item.json.answer }}"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "fdeb849b-7300-4eaa-a8d8-8bc63684e737",
+        "name": "Save to Messages - Assistant",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          1280,
+          160
+        ],
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "={{ { \"answer\": $('Extract Groq Response').item.json.answer, \"cached\": false, \"source\": \"groq\" } }}",
+          "options": {}
+        },
+        "id": "2a333a0a-ee11-46f2-ab2b-eff2828a6817",
+        "name": "Return Groq Answer",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1,
+        "position": [
+          1472,
+          48
+        ]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "50d19cb1-89c7-409f-9099-85813ad4ab74",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -144,
+          -48
+        ],
+        "id": "71c7eed1-cc7c-4633-8a14-f58c17dc7be2",
+        "name": "Webhook",
+        "webhookId": "50d19cb1-89c7-409f-9099-85813ad4ab74"
+      },
+      {
+        "parameters": {
+          "respondWith": "json",
+          "responseBody": "{\n  \"success\": true\n}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.4,
+        "position": [
+          -144,
+          176
+        ],
+        "id": "ab847c1f-4978-413b-a9ed-94e9081c9959",
+        "name": "Respond to Webhook1"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Function Node Code:\nconst question = $input.first().json.question;\n\nconsole.log(\"=== WEBHOOK TRIGGERED ===\");\nconsole.log(\"Question received:\", question);\nconsole.log(\"Full input:\", JSON.stringify($input.first().json, null, 2));\n\n// Weitergeben\nreturn {\n  question: question,\n  rawInput: $input.first().json\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          128,
+          160
+        ],
+        "id": "8d48a807-3a1b-43c4-8989-d4f7609217c7",
+        "name": "Code in JavaScript"
+      }
+    ],
+    "connections": {
+      "Extract Question": {
+        "main": [
+          [
+            {
+              "node": "Supabase - Search Cache",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Supabase - Search Cache": {
+        "main": [
+          [
+            {
+              "node": "Cache Hit?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Cache Hit?": {
+        "main": [
+          [
+            {
+              "node": "Update Cache Counter",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Groq Chat",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Cache Counter": {
+        "main": [
+          [
+            {
+              "node": "Return Cached Answer",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Groq Chat": {
+        "main": [
+          [
+            {
+              "node": "Extract Groq Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Groq Response": {
+        "main": [
+          [
+            {
+              "node": "Save to Cache",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Save to Messages - User",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save to Cache": {
+        "main": [
+          [
+            {
+              "node": "Save to Messages - Assistant",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save to Messages - Assistant": {
+        "main": [
+          [
+            {
+              "node": "Return Groq Answer",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "Respond to Webhook1",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Code in JavaScript",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail",
+    "name": "Version1",
+    "description": "",
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-01-04T17:38:38.683Z",
+        "id": 99,
+        "workflowId": "8eJQrmHljvdmQvpR",
+        "versionId": "5373ad12-9855-4e78-938d-8cda0842ec4d",
+        "event": "activated",
+        "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f"
+      }
+    ]
+  }
+}
+
+
