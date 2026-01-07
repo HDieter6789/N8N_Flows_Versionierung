@@ -1,0 +1,284 @@
+{
+  "id": "e4oclWQlQGEaG9P0",
+  "name": "(Under Construction) CCM19 Cookie Consent Tracking",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c2633444-a8e3-4e52-94fd-2f22039b5903",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a0623c93-745a-4c3d-b98a-b257a2c03bd5",
+      "name": "Webhook",
+      "webhookId": "c2633444-a8e3-4e52-94fd-2f22039b5903"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "32d7a062-82af-4d1b-899e-907072e4200b",
+              "name": "einwilligungs_id",
+              "value": "={{ $json.body.einwilligungs_id }}",
+              "type": "string"
+            },
+            {
+              "id": "809ec7b7-a228-4fca-8600-d77d05a29fee",
+              "name": "benutzer_id",
+              "value": "={{ $json.body.benutzer_id }}",
+              "type": "string"
+            },
+            {
+              "id": "dff0db97-ec99-47bc-8410-7de8fa82f7ad",
+              "name": "zeitstempel_der_einwilligung",
+              "value": "={{ $json.body.zeitstempel }}",
+              "type": "string"
+            },
+            {
+              "id": "07ddc1b2-f303-4b51-a881-5c8d279a0bea",
+              "name": "akzeptierte_kategorien",
+              "value": "={{ $json.body.akzeptierte_kategorien }}",
+              "type": "object"
+            },
+            {
+              "id": "2f522c4a-0673-48de-9c9c-33fd3c26b1c6",
+              "name": "abgelehnte_kategorien",
+              "value": "={{ $json.body.abgelehnte_kategorien }}",
+              "type": "object"
+            },
+            {
+              "id": "3d5e48f0-a755-49da-ae01-bd5a26de3eaa",
+              "name": "zustimmungsversion",
+              "value": "={{ $json.body.zustimmungsversion }}",
+              "type": "string"
+            },
+            {
+              "id": "27d9d82f-2b6f-4205-b7be-b7aa6f5fb25c",
+              "name": "ip_adresse",
+              "value": "={{ $json.headers['x-forwarded-for'] }}",
+              "type": "string"
+            },
+            {
+              "id": "cf7ab174-0c9b-4fde-bd06-b890e0858e32",
+              "name": "benutzeragent",
+              "value": "={{ $json.body.benutzeragent }}",
+              "type": "string"
+            },
+            {
+              "id": "080fcfa2-a975-4ffb-be96-2ad97ba436ec",
+              "name": "ccm19_raw_data",
+              "value": "={{ $json.body.ccm19_raw_data }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "21e4ea1d-bf1d-4c2a-8227-544a917a06a8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "tableId": "cookie_consents",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "consent_id",
+              "fieldValue": "={{ $json.einwilligungs_id }}"
+            },
+            {
+              "fieldId": "user_id",
+              "fieldValue": "={{ $json.benutzer_id }}"
+            },
+            {
+              "fieldId": "consent_timestamp",
+              "fieldValue": "={{ $json.zeitstempel_der_einwilligung }}"
+            },
+            {
+              "fieldId": "accepted_categories",
+              "fieldValue": "={{ $json.akzeptierte_kategorien }}"
+            },
+            {
+              "fieldId": "rejected_categories",
+              "fieldValue": "={{ $json.abgelehnte_kategorien }}"
+            },
+            {
+              "fieldId": "consent_version",
+              "fieldValue": "={{ $json.zustimmungsversion }}"
+            },
+            {
+              "fieldId": "ip_address",
+              "fieldValue": "={{ $json.ip_adresse }}"
+            },
+            {
+              "fieldId": "user_agent",
+              "fieldValue": "={{ $json.benutzeragent }}"
+            },
+            {
+              "fieldId": "ccm19_raw_data",
+              "fieldValue": "={{ $json.ccm19_raw_data }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "ca12ea84-4100-47a3-a159-40436aee15ca",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "GQTOgRstpDpeHMX6",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        496,
+        0
+      ],
+      "id": "4852a71e-afea-4f35-adbe-d30d6678daff",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f9e0b1b7-d3b8-4949-9956-86d267b2a9e3",
+  "activeVersionId": null,
+  "versionCounter": 8,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2025-12-06T11:10:29.993Z",
+      "createdAt": "2025-12-06T11:10:29.993Z",
+      "role": "workflow:owner",
+      "workflowId": "e4oclWQlQGEaG9P0",
+      "projectId": "pdXrHuiVvp9F1fDE",
+      "project": {
+        "updatedAt": "2025-11-18T18:05:08.560Z",
+        "createdAt": "2025-11-18T17:59:43.858Z",
+        "id": "pdXrHuiVvp9F1fDE",
+        "name": "Sebastian Ohl <s.ohl.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-18T17:59:43.858Z",
+            "createdAt": "2025-11-18T17:59:43.858Z",
+            "userId": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+            "projectId": "pdXrHuiVvp9F1fDE",
+            "user": {
+              "updatedAt": "2026-01-06T18:04:27.083Z",
+              "createdAt": "2025-11-18T17:59:43.858Z",
+              "id": "68ba2345-aeca-45cd-9df8-5cc664ff8036",
+              "email": "s.ohl.hom@gmail.com",
+              "firstName": "Sebastian",
+              "lastName": "Ohl",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-18T18:05:28.706Z",
+                "personalization_survey_n8n_version": "1.120.3"
+              },
+              "settings": null,
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-06",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [
+    {
+      "updatedAt": "2025-12-20T14:11:20.124Z",
+      "createdAt": "2025-12-20T14:11:20.124Z",
+      "id": "lwJcgI9z5wpsAIwV",
+      "name": "Webiste"
+    },
+    {
+      "updatedAt": "2025-12-20T14:11:24.223Z",
+      "createdAt": "2025-12-20T14:11:24.223Z",
+      "id": "1OKj3IgxVgtVBEFX",
+      "name": "Sebastian"
+    },
+    {
+      "updatedAt": "2026-01-06T15:38:05.507Z",
+      "createdAt": "2026-01-06T15:38:05.507Z",
+      "id": "HqexP7AbtWcVotyb",
+      "name": "Traffic"
+    }
+  ],
+  "activeVersion": null
+}
+
+
