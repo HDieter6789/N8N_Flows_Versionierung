@@ -1,0 +1,292 @@
+{
+  "id": "x17ALrATljc-O6-qsPe1f",
+  "name": "(Not tested) Knowledge-Flow",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -96
+      ],
+      "id": "53ab70ba-598f-4daf-ad72-878cd4ef173a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// CSV Content - hier deine Knowledge Base Daten einfügen\nconst csvContent = `question,answer,category,tags\nWie sind die Öffnungszeiten von HOM?,Montag bis Freitag von 9-18 Uhr,Allgemein,öffnungszeiten;service;kontakt\nWas kostet der Basis-Service?,Der Basisservice startet ab 299€ pro Monat,Preise,kosten;basis;monatlich;preise\nBieten Sie Callcenter-Services an?,Ja wir bieten professionelle Callcenter-Lösungen und Kundenservice,Services,callcenter;telefon;kundenservice\nKann ich einen Rückruf anfordern?,Ja einfach Kontaktformular ausfüllen oder anrufen,Service,rückruf;kontakt;anfrage`;\n\n// CSV parsen\nconst lines = csvContent.trim().split('\\n');\nconst headers = lines[0].split(',');\n\n// Jede Zeile in JSON Object umwandeln\nconst items = lines.slice(1).map(line => {\n  const values = line.split(',');\n  const item = {};\n  \n  headers.forEach((header, index) => {\n    item[header.trim()] = values[index]?.trim() || '';\n  });\n  \n  return { json: item };\n});\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -96
+      ],
+      "id": "36461d19-a80c-456d-8b45-89e591a32d81",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -32,
+        -96
+      ],
+      "id": "493f11dc-60a2-4e7b-ba15-6f94f9493fa0",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ollama-embeddings-ieso.onrender.com/api/embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"nomic-embed-text\",\n  \"prompt\": \"={{ $json.question }} {{ $json.answer }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        176,
+        -192
+      ],
+      "id": "1af50994-368c-4ef8-b592-f4d7d04b1b84",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Embedding aus HTTP Response holen\nconst embedding = $input.first().json.embedding;\n\n// Original-Daten aus dem Loop holen\nconst originalItem = $('Loop Over Items').item.json;\n\n// Kombiniere alles für Supabase\nreturn [{\n  json: {\n    question: originalItem.question,\n    answer: originalItem.answer,\n    category: originalItem.category,\n    tags: originalItem.tags ? originalItem.tags.split(';') : [],\n    embedding: `[${embedding.join(',')}]`,\n    source: 'csv_import',\n    created_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -192
+      ],
+      "id": "1c59effa-1338-44b7-98d0-b70a78ca04c8",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "tableId": "=hom_knowledge_base",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "=question",
+              "fieldValue": "=={{ $json.question }}"
+            },
+            {
+              "fieldId": "=answer",
+              "fieldValue": "=={{ $json.answer }}"
+            },
+            {
+              "fieldId": "=category",
+              "fieldValue": "=={{ $json.category }}"
+            },
+            {
+              "fieldId": "=tags",
+              "fieldValue": "={{ $json.tags }}"
+            },
+            {
+              "fieldId": "=embedding",
+              "fieldValue": "={{ $json.embedding }}"
+            },
+            {
+              "fieldId": "=source",
+              "fieldValue": "=={{ $json.source }}"
+            },
+            {
+              "fieldId": "=created_at",
+              "fieldValue": "=={{ $json.created_at }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        592,
+        -192
+      ],
+      "id": "19d9d3c0-f6f2-47e4-b127-fed730332db8",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "EDitKxAqE070oYZ5",
+          "name": "Supabase account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Trigger aktuell manuell - Muss warscheinlich ein webhook Trigger sein",
+        "height": 96
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -576,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "9b634ac3-7292-41d9-a851-227bd8e40d86",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "df4e0a04-6a23-4be6-91b9-7ffecc266cd0",
+  "activeVersionId": null,
+  "versionCounter": 10,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-01-09T21:38:57.833Z",
+      "createdAt": "2026-01-09T21:38:57.833Z",
+      "role": "workflow:owner",
+      "workflowId": "x17ALrATljc-O6-qsPe1f",
+      "projectId": "aEYp3klNFq78AVlK",
+      "project": {
+        "updatedAt": "2025-11-18T10:39:58.343Z",
+        "createdAt": "2025-11-17T19:20:16.870Z",
+        "id": "aEYp3klNFq78AVlK",
+        "name": "Guyvany Massamba <guyvany.massamba.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "8116fb8a-9e4b-4c86-950c-fd9607258c1b",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-17T19:20:16.870Z",
+            "createdAt": "2025-11-17T19:20:16.870Z",
+            "userId": "8116fb8a-9e4b-4c86-950c-fd9607258c1b",
+            "projectId": "aEYp3klNFq78AVlK",
+            "user": {
+              "updatedAt": "2026-01-11T14:27:01.819Z",
+              "createdAt": "2025-11-17T19:20:16.870Z",
+              "id": "8116fb8a-9e4b-4c86-950c-fd9607258c1b",
+              "email": "guyvany.massamba.hom@gmail.com",
+              "firstName": "Guyvany",
+              "lastName": "Massamba",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-18T10:41:51.862Z",
+                "personalization_survey_n8n_version": "1.119.2"
+              },
+              "settings": null,
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-11",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [
+    {
+      "updatedAt": "2026-01-12T18:35:03.263Z",
+      "createdAt": "2026-01-12T18:35:03.263Z",
+      "id": "euyrQdznnK6t4Kuq",
+      "name": "Guyvany"
+    },
+    {
+      "updatedAt": "2026-01-12T18:34:54.981Z",
+      "createdAt": "2026-01-12T18:34:54.981Z",
+      "id": "dPOwQvd0n60W3u8Y",
+      "name": "Database"
+    }
+  ],
+  "activeVersion": null
+}
+
+
