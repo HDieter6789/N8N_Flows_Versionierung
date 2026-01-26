@@ -1,0 +1,2871 @@
+{
+  "id": "ml5H7lsIpKo0f-vQTLDoI",
+  "name": "E-Mail Master Test Seb",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "ticket",
+        "pipelineId": "0",
+        "stageId": "3809861831",
+        "ticketName": "=={{ $('Generate Session ID').item.json.email_subject }}",
+        "additionalFields": {
+          "associatedCompanyIds": [],
+          "description": "=Von: {{ $('Generate Session ID').item.json.email_from }}\nDatum: {{ $('Generate Session ID').item.json.email_date }}\n\nNachricht:\n{{ $('Generate Session ID').item.json.email_plain }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -272,
+        224
+      ],
+      "id": "1e309008-285f-4a59-878a-d8ac238e1218",
+      "name": "Erstellung von Ticket in HubSpot",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "QvkQ600AL5fGJwLH",
+          "name": "HubSpot App Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2080,
+        448
+      ],
+      "id": "e2c8b995-ae81-4976-8d39-ac15391e75cf",
+      "name": "E-Mail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OKq2j7egP8CoZAL1",
+          "name": "Gmail account Corporate"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// n8n-kompatible UUID-Generierung\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\n// E-Mail-Adresse extrahieren und säubern\nfunction extractEmailAddress(fromField) {\n  if (!fromField || typeof fromField !== 'string') return '';\n  \n  // Entferne \"Delivered-To:\" oder andere Präfixe\n  let cleaned = fromField.replace(/^[^:]+:\\s*/, '').trim();\n  \n  // Extrahiere Email aus \"Name <email@domain.com>\" Format\n  const match = cleaned.match(/<(.+?)>/);\n  if (match && match[1]) {\n    return match[1];\n  }\n  \n  return cleaned;\n}\n\n// Session ID generieren\nconst sessionId = generateUUID();\n\n// Gmail Trigger Daten\nconst item = $input.item.json;\n\n// Headers\nconst headers = item.headers || {};\n\n// Email FROM: aus return-path Header (das ist der echte Absender!)\nconst emailFrom = extractEmailAddress(headers['return-path'] || '');\n\n// Email TO: aus delivered-to Header (ohne \"Delivered-To:\" Präfix)\nconst deliveredToRaw = headers['delivered-to'] || '';\nconst emailTo = extractEmailAddress(deliveredToRaw);\n\n// Subject\nconst subject = item.subject || '(Kein Betreff)';\n\n// Message ID und Thread ID\nconst messageId = item.id || '';\nconst threadId = item.threadId || '';\n\n// Datum\nconst emailDate = item.internalDate \n  ? new Date(parseInt(item.internalDate)).toISOString() \n  : new Date().toISOString();\n\n// E-Mail Inhalt\nconst emailPlain = item.textPlain || item.snippet || '';\nconst emailHtml = item.textHtml || null;\n\n// Attachments\nconst attachments = item.attachments || [];\nconst attachmentList = attachments.map(att => ({\n  filename: att.filename || 'unnamed',\n  mimeType: att.mimeType || 'application/octet-stream',\n  size: att.size || 0\n}));\n\n// Label IDs\nconst labelIds = item.labelIds || [];\n\nreturn {\n  json: {\n    session_id: sessionId,\n    email_from: emailFrom,\n    email_to: emailTo,\n    email_subject: subject,\n    email_message_id: messageId,\n    email_thread_id: threadId,\n    email_date: emailDate,\n    email_plain: emailPlain,\n    email_html: emailHtml,\n    email_headers: headers,\n    email_attachments: attachmentList,\n    label_ids: labelIds\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1808,
+        448
+      ],
+      "id": "1b5218fe-f7f5-49e8-9d63-235546bb5ba4",
+      "name": "Generate Session ID"
+    },
+    {
+      "parameters": {
+        "tableId": "email_sessions",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "id",
+              "fieldValue": "={{ $('Generate Session ID').item.json.session_id }}"
+            },
+            {
+              "fieldId": "email_from",
+              "fieldValue": "={{ $json.email_from }}"
+            },
+            {
+              "fieldId": "email_to",
+              "fieldValue": "={{ $json.email_to }}"
+            },
+            {
+              "fieldId": "email_subject",
+              "fieldValue": "={{ $json.email_subject }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "open"
+            },
+            {
+              "fieldId": "topic",
+              "fieldValue": "={{ $json.email_subject }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            },
+            {
+              "fieldId": "parent_session_id",
+              "fieldValue": "={{ $if($('Find Parent Session').isExecuted, $('Find Parent Session').item.json.id, null) }}"
+            },
+            {
+              "fieldId": "thread_id",
+              "fieldValue": "={{ $json.email_thread_id }}"
+            },
+            {
+              "fieldId": "hierarchy_level",
+              "fieldValue": "={{ $('Check Thread Hierarchy').item.json.hierarchy_level }}"
+            },
+            {
+              "fieldId": "is_initial_contact",
+              "fieldValue": "={{ $('Check Thread Hierarchy').item.json.is_initial_contact }}"
+            },
+            {
+              "fieldId": "hubspot_ticket_id",
+              "fieldValue": "={{ $json.hubspot_ticket_id }}"
+            },
+            {
+              "fieldId": "user_identifier",
+              "fieldValue": "={{ $json.email_from }}"
+            }
+          ]
+        }
+      },
+      "id": "c59bd7d0-bedb-42b0-8f17-87dd437a860a",
+      "name": "Create Email Session",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        464
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "email_sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Generate Session ID').item.json.session_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "hubspot_ticket_id",
+              "fieldValue": "={{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}"
+            }
+          ]
+        }
+      },
+      "id": "b667fbb2-7b30-45eb-a968-8f1a2519f486",
+      "name": "Update Session with Ticket ID",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        416
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "email_messages",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Generate Session ID').item.json.session_id }}"
+            },
+            {
+              "fieldId": "role",
+              "fieldValue": "user"
+            },
+            {
+              "fieldId": "input_content",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_plain }}"
+            },
+            {
+              "fieldId": "email_message_id",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_message_id }}"
+            },
+            {
+              "fieldId": "email_thread_id",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_thread_id }}"
+            },
+            {
+              "fieldId": "email_from",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_from }}"
+            },
+            {
+              "fieldId": "email_to",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_to }}"
+            },
+            {
+              "fieldId": "email_subject",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_subject }}"
+            },
+            {
+              "fieldId": "email_date",
+              "fieldValue": "={{ new Date($('Generate Session ID').item.json.email_date).toISOString() }}"
+            },
+            {
+              "fieldId": "email_plain",
+              "fieldValue": "={{ $('Generate Session ID').item.json.email_plain }}"
+            },
+            {
+              "fieldId": "direction",
+              "fieldValue": "inbound"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "ede339c9-a16d-46d9-a973-bab34467ed81",
+      "name": "Save Email Message",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        96,
+        560
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract Contact Info (n8n Code Node)\n// Ziel: Aus der eingehenden E-Mail-Adresse ein sauberes JSON erzeugen (email, first_name, last_name, session_id)\n// WICHTIG: session_id wird aus dem aktuellen Item ($json) genommen, um \"Paired item data\" Fehler zu vermeiden.\n\nconst emailRaw =\n  $json.email_from ||\n  $json.email ||\n  $json.from ||\n  $json.sender_email ||\n  null;\n\n// Falls \"From\" als \"Name <mail@domain.com>\" kommt, Mail extrahieren\nfunction normalizeEmail(input) {\n  if (!input) return null;\n  const s = String(input).trim();\n\n  // Match: <mail@domain.com>\n  const angleMatch = s.match(/<([^>]+)>/);\n  const candidate = (angleMatch?.[1] || s).trim();\n\n  // Basic cleanup\n  return candidate.toLowerCase();\n}\n\nfunction extractNameFromEmail(email) {\n  if (!email) return { first_name: null, last_name: null, full_name: null };\n\n  const localPart = email.split(\"@\")[0] || \"\";\n\n  // Trennzeichen: ., _, -, plus (plus ist häufig bei Aliases)\n  const parts = localPart\n    .split(/[._\\-+]+/g)\n    .map(p => p.trim())\n    .filter(Boolean);\n\n  const cap = (v) => v ? (v.charAt(0).toUpperCase() + v.slice(1)) : null;\n\n  const first = parts[0] ? cap(parts[0]) : null;\n  const last = parts.length > 1 ? cap(parts[1]) : null;\n\n  return {\n    first_name: first,\n    last_name: last,\n    full_name: [first, last].filter(Boolean).join(\" \") || null,\n  };\n}\n\nconst email = normalizeEmail(emailRaw);\nconst nameInfo = extractNameFromEmail(email);\n\n// Session ID robust aus dem aktuellen Item holen\n// (falls sie anders heißt, ergänze hier weitere Fallbacks)\nconst session_id =\n  $json.session_id ||\n  $json.sessionId ||\n  $json.session ||\n  null;\n\nreturn {\n  json: {\n    email,\n    first_name: nameInfo.first_name,\n    last_name: nameInfo.last_name,\n    full_name: nameInfo.full_name,\n    session_id,\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        560
+      ],
+      "id": "9052aa1b-8375-488a-9d5f-00cea835cfd3",
+      "name": "Extract Contact Info"
+    },
+    {
+      "parameters": {
+        "tableId": "profiles"
+      },
+      "id": "83732352-39e7-4d73-a266-a759e4360018",
+      "name": "Create or Update Profile",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        912,
+        560
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "engagement",
+        "type": "email",
+        "metadata": {
+          "fromEmail": "={{ $('Extract Contact Info').item.json.email }}",
+          "html": "={{ $('E-Mail Generierung mit E-Mail').item.json.hs_note_body }}",
+          "subject": "={{ $('E-Mail Generierung mit E-Mail').item.json.hs_email_subject }}",
+          "toEmail": [
+            "={{ $('Extract Contact Info').item.json.email }}"
+          ]
+        },
+        "additionalFields": {
+          "associations": {
+            "ticketIds": "={{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        1600,
+        560
+      ],
+      "id": "9ef68405-7e06-4c7f-8d7b-5e199be936ff",
+      "name": "Email in Ticket schreiben",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "QvkQ600AL5fGJwLH",
+          "name": "HubSpot App Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(i => {\n  i.json.email = (i.json.email || '').trim().toLowerCase();\n  return i;\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        560
+      ],
+      "id": "c1f730f2-d1f6-46ea-bc72-b068e961427b",
+      "name": "E-Mail normalisieren"
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.hubapi.com/crm/v3/objects/tickets/{{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}/associations/contacts/{{ $('Search contacts').item.json.id }}/16",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "[\n  {\n    \"associationCategory\": \"HUBSPOT_DEFINED\",\n    \"associationTypeId\": 16\n  }\n]",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        560
+      ],
+      "id": "dc2c3fd8-dd05-420b-8440-5643882401ee",
+      "name": "Verknüpfe Kontakt mit Ticket",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rRZKHRedGDEVjdPD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "operation": "search",
+        "limit": 1,
+        "filterGroupsUi": {
+          "filterGroupsValues": [
+            {
+              "filtersUi": {
+                "filterValues": [
+                  {
+                    "propertyName": "email|string",
+                    "value": "={{$json.email}}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        560
+      ],
+      "id": "e8756770-3f16-460e-8e14-aaf07a480dc7",
+      "name": "Search contacts",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "QvkQ600AL5fGJwLH",
+          "name": "HubSpot App Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- 1) Inputs holen ---\nconst assigneeRaw = $('Execute a SQL query').first().json.assignee;\nconst assignee = String(assigneeRaw || '').trim();\n\nconst ticketId = $('Erstellung von Ticket in HubSpot').first().json.objectId;\n\n// Team-Member aus Supabase (optional für Email/Name)\nconst teamItems = $('Hole Team-Mitarbeiter').all();\nconst teamMembers = teamItems.map(i => i.json);\n\n// --- 2) Fixes Mapping (Assignee -> HubSpot Owner ID) ---\nconst HUBSPOT_OWNER_MAP = {\n  'Guyvany': 31019350,\n  'Jan H': 85241193,\n  'Sebastian': 31019353,\n};\n\n// --- 3) Reihenfolge für nextIndex (WICHTIG: an eure Erwartung anpassen) ---\n// Beispiel-Order so, dass Sebastian -> nextIndex 1 möglich ist, wenn Sebastian 2. Position ist.\n// Passe die Reihenfolge exakt so an, wie ihr \"Index\" interpretieren wollt.\nconst ORDER = ['Guyvany', 'Sebastian', 'Jan H'];\n\n// --- 4) HubSpot Owner ID auflösen ---\nconst agentHubspotId = HUBSPOT_OWNER_MAP[assignee];\nif (!agentHubspotId) {\n  throw new Error(\n    `Unbekannter assignee=\"${assignee}\". Erwartet: ${Object.keys(HUBSPOT_OWNER_MAP).join(', ')}`\n  );\n}\n\n// --- 5) Optional: Email/Name aus team_members holen ---\nconst matchedMember =\n  teamMembers.find(m => String(m.name || '').trim() === assignee) ||\n  teamMembers.find(m => String(m.name || '').toLowerCase().includes(assignee.toLowerCase())) ||\n  teamMembers.find(m => Number(m.hubspot_owner_id) === Number(agentHubspotId));\n\nconst agentEmail = matchedMember?.email || '';\nconst agentName = matchedMember?.name || assignee;\n\n// --- 6) totalAgents & nextIndex bestimmen ---\nconst totalAgents = teamMembers.length > 0 ? teamMembers.length : Object.keys(HUBSPOT_OWNER_MAP).length;\n\n// nextIndex = Position des Assignee in ORDER (0-basiert). Fallback: 0\nlet nextIndex = ORDER.findIndex(n => n === assignee);\nif (nextIndex === -1) nextIndex = 0;\n\n// --- 7) Output exakt wie gewünscht ---\nreturn [{\n  json: {\n    ticketId: String(ticketId),\n    agentHubspotId: Number(agentHubspotId),\n    agentEmail: String(agentEmail),\n    agentName: String(agentName),\n    nextIndex: Number(nextIndex),\n    totalAgents: Number(totalAgents),\n  }\n}];\n"
+      },
+      "id": "ca6c717f-ce97-48f0-8f2e-85cc042768ff",
+      "name": "Berechne nächsten Agent",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        464,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "ticket",
+        "operation": "update",
+        "ticketId": {
+          "__rl": true,
+          "value": "={{$node[\"Erstellung von Ticket in HubSpot\"].json.objectId}}\n",
+          "mode": "id"
+        },
+        "updateFields": {
+          "ticketOwnerId": "={{ $json.agentHubspotId }}"
+        }
+      },
+      "id": "58114e33-9df6-4c0b-ba9e-e4f6a102eeeb",
+      "name": "Ticket in HubSpot zuweisen",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        768,
+        0
+      ],
+      "typeVersion": 2,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "LHRoG7tXEtR8p93h",
+          "name": "HubSpot App Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "ticket_assignment_state",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Hole Round-Robin Status').first().json.id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "last_assigned_agent_index",
+              "fieldValue": "={{ $json.nextIndex }}"
+            },
+            {
+              "fieldId": "total_agents",
+              "fieldValue": "={{ $json.totalAgents }}"
+            },
+            {
+              "fieldId": "updated_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "id": "fdb97c93-dc05-4fa9-a55e-c995fe326842",
+      "name": "Update Round-Robin Status",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        992,
+        0
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      },
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "team_members",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "active"
+            }
+          ]
+        }
+      },
+      "id": "87786957-7b09-4be6-8d26-303307a4cfb4",
+      "name": "Hole Team-Mitarbeiter",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        224,
+        0
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "ticket",
+        "operation": "update",
+        "ticketId": {
+          "__rl": true,
+          "value": "={{ $json.ticketId }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "stageId": "={{ \"4232446185\" }}"
+        }
+      },
+      "id": "e1a1d2f6-7371-4c5e-a5c3-534db6c9242c",
+      "name": "Ticket Status Update \"In Bearbeitung\"",
+      "type": "n8n-nodes-base.hubspot",
+      "position": [
+        768,
+        224
+      ],
+      "typeVersion": 2,
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "QvkQ600AL5fGJwLH",
+          "name": "HubSpot App Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select public.get_next_assignee(\n  array['Guyvany','Jan H','Sebastian']\n) as assignee;\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c64426ab-2285-48cb-9ea7-1c4c26592925",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "YhIS9TbQifYblg0R",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Extract Contact Info').item.json.email }}",
+        "subject": "=Re: {{ $('Generate Session ID').item.json.email_subject }}",
+        "message": "=<!DOCTYPE html> <html> <head>     <meta charset=\"UTF-8\">     <style>         body {             font-family: Arial, sans-serif;             line-height: 1.6;             color: #333;         }         .container {             max-width: 600px;             margin: 0 auto;             padding: 20px;         }         .header {             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);             color: white;             padding: 30px 20px;             text-align: center;             border-radius: 10px 10px 0 0;         }         .content {             background: #ffffff;             padding: 30px 20px;             border: 1px solid #e0e0e0;         }         .footer {             background: #f5f5f5;             padding: 20px;             text-align: center;             font-size: 12px;             color: #666;             border-radius: 0 0 10px 10px;         }         .ticket-info {             background: #f0f7ff;             padding: 15px;             border-left: 4px solid #667eea;             margin: 20px 0;         }         .button {             display: inline-block;             padding: 12px 30px;             background: #667eea;             color: white;             text-decoration: none;             border-radius: 5px;             margin-top: 20px;         }     </style> </head> <body>     <div class=\"container\">         <div class=\"header\">             <h1>✅ Ihre Anfrage wurde empfangen</h1>         </div>                  <div class=\"content\">             <p>Sehr geehrte/r {{ $('Extract Contact Info').item.json.first_name || 'Kunde/Kundin' }},</p>                          <p>vielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und werden uns zeitnah bei Ihnen melden.</p>                          <div class=\"ticket-info\">                 <strong>📋 Ihre Referenznummer:</strong><br>                 Ticket-ID: {{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}<br>                 Session-ID: {{ $('Generate Session ID').item.json.session_id }}             </div>                          <p><strong>Ihre Anfrage:</strong><br>             <em>{{ $('Generate Session ID').item.json.email_subject }}</em></p>                          <p>Unser Team bearbeitet Ihr Anliegen mit höchster Priorität. In der Regel erhalten Sie innerhalb von <strong>24 Stunden</strong> eine Rückmeldung von uns.</p>                          <p>Bei dringenden Anliegen können Sie uns auch telefonisch erreichen.</p>         </div>                  <div class=\"footer\">             <p><strong>H.O.M. Smart Service UG</strong></p>             <p>📧 kontakt.homsmartservice@gmail.com</p>             <p>Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht.</p>         </div>     </div> </body> </html> ```  ---  ## **Alternative: Einfachere Text-Version**  Falls du lieber eine schlichtere Version willst:  **Message Type**: **Text**  **Message (Text):** ``` Sehr geehrte/r {{ $('Extract Contact Info').item.json.first_name || 'Kunde/Kundin' }},  vielen Dank für Ihre Nachricht vom {{ $now.format('dd.MM.yyyy') }}.  Wir haben Ihre Anfrage erhalten und bearbeiten diese mit höchster Priorität.  📋 IHRE REFERENZ: Ticket-ID: {{ $('Erstellung von Ticket in HubSpot').item.json.objectId }} Session-ID: {{ $('Generate Session ID').item.json.session_id }}  📝 IHR ANLIEGEN: {{ $('Generate Session ID').item.json.email_subject }}  ⏱️ BEARBEITUNGSZEIT: Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden.  Bei dringenden Anliegen erreichen Sie uns auch telefonisch.  Mit freundlichen Grüßen Ihr Team von H.O.M. Smart Service UG  --- H.O.M. Smart Service UG 📧 kontakt.homsmartservice@gmail.com  Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht. ```  ---  ## **Optional: CC oder BCC hinzufügen**  Falls du intern eine Kopie haben willst:  **BCC:** ``` kontakt.homsmartservice@gmail.com ```  ---  ## **Finaler Workflow:** ``` [Gmail Trigger]   ↓ [Generate Session ID]   ↓ [Create Email Session]   ↓ [Create HubSpot Ticket]   ↓ [Update Session with Ticket ID]   ↓ [Save Email Message]   ↓ [Extract Contact Info]   ↓ [Search or Create Contact]   ↓ [Link Contact to Ticket]   ↓ [Create or Update Profile]   ↓ [Generate Email Note]   ↓ [Add Note to Ticket]   ↓ [Send Auto-Reply Email] ← NEU! ✉️",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1824,
+        560
+      ],
+      "id": "eb0cbb7d-8e06-4dfb-82f9-e2e88e74309e",
+      "name": "Send Auto-Reply Email",
+      "webhookId": "514adbc2-d252-4d64-8760-970b59ac4446",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OKq2j7egP8CoZAL1",
+          "name": "Gmail account Corporate"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// E-Mail Daten vom vorherigen Node holen\nconst emailData = $input.item.json;\n\n// Gmail Thread ID und Message IDs extrahieren\nconst threadId = emailData.email_thread_id || '';\nconst messageId = emailData.email_message_id || '';\nconst inReplyTo = emailData.in_reply_to || '';\n\n// Prüfen ob es sich um eine Antwort handelt\nconst isReply = Boolean(inReplyTo) || emailData.email_subject?.startsWith('Re:') || emailData.email_subject?.startsWith('AW:');\n\n// Thread Hierarchy Daten zusammenstellen\nconst checkThreadData = {\n  thread_id: threadId,\n  message_id: messageId,\n  in_reply_to: inReplyTo,\n  is_reply: isReply\n};\n\n// Parent Session ID und Hierarchy ermitteln\nlet parentSessionId = null;\nlet hierarchyLevel = 0;\n\nif (isReply && threadId) {\n  // Wenn es eine Reply ist, setze Hierarchy Level\n  hierarchyLevel = 1; // Erstmal als Level 1 setzen\n  // parentSessionId wird später durch \"Find Parent Session\" ermittelt\n}\n\nreturn {\n  json: {\n    ...emailData,\n    checkThreadData,\n    is_initial_contact: !isReply,\n    is_reply: isReply,\n    parent_session_id: parentSessionId,  // NEU!\n    hierarchy_level: hierarchyLevel,      // NEU!\n    thread_id: threadId,\n    hubspot_ticket_id: null\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        448
+      ],
+      "id": "86352b53-4dc5-4615-a2cf-dd658f0cca6b",
+      "name": "Check Thread Hierarchy"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2cc362b1-0545-4e7a-acfa-511faa5d0b61",
+              "leftValue": "={{ $json.is_reply }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1424,
+        448
+      ],
+      "id": "ce8496e0-b590-423e-b404-252678345424",
+      "name": "Is Reply or Follow-up?"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2cc362b1-0545-4e7a-acfa-511faa5d0b61",
+              "leftValue": "={{ $('Check Thread Hierarchy').item.json.is_initial_contact }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        464
+      ],
+      "id": "66e587c0-53f9-4854-b9b5-03fe16678604",
+      "name": "Need New Ticket?"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "email_sessions",
+        "limit": 100,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "thread_id",
+              "condition": "eq",
+              "keyValue": "={{ $json.thread_id }}"
+            },
+            {
+              "keyName": "is_initial_contact",
+              "condition": "eq",
+              "keyValue": "true"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1296,
+        224
+      ],
+      "id": "0da604f4-b944-4505-855b-ad14ab3e183d",
+      "name": "Find Parent Session",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const findParentResult = $input.all();\nconst checkThreadData = $('Check Thread Hierarchy').first().json;\n\n// Wenn keine Parent Session gefunden wurde\nif (findParentResult.length === 0) {\n  // Behandle als Initial Contact\n  return [{\n    json: {\n      ...checkThreadData,\n      is_initial_contact: true,\n      is_reply: false,\n      parent_session_id: null,\n      hierarchy_level: 0,\n      hubspot_ticket_id: null\n    }\n  }];\n}\n\n// Wenn Parent gefunden wurde, gib die Parent Session zurück\nreturn findParentResult;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        224
+      ],
+      "id": "2839199d-48c3-4082-92f9-c366dc9142df",
+      "name": "Handle Missing Parent"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "email_sessions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "keyValue": "={{ $('Create Email Session').item.json.parent_session_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        800
+      ],
+      "id": "9c2370bf-94d1-458c-8915-687f7e92e392",
+      "name": "Get Parent Ticket ID",
+      "credentials": {
+        "supabaseApi": {
+          "id": "GQTOgRstpDpeHMX6",
+          "name": "Supabase account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "ticket",
+        "operation": "update",
+        "ticketId": {
+          "__rl": true,
+          "value": "={{ $('Get Parent Ticket ID').item.json.hubspot_ticket_id }}",
+          "mode": "id"
+        },
+        "updateFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        800
+      ],
+      "id": "cae387fb-566f-45db-8a0c-d296c29f3b09",
+      "name": "Update a ticket",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "LHRoG7tXEtR8p93h",
+          "name": "HubSpot App Token account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// E-Mail Daten aus den vorherigen Nodes holen\nconst emailFrom = $('Create Email Session').item.json.email_from || '';\nconst emailSubject = $('Create Email Session').item.json.email_subject || '';\n\n// WICHTIG: Hole email_plain vom ursprünglichen E-Mail Input!\nconst emailContent = $('Is Reply or Follow-up?').item.json.email_plain || '';\n\nconst sessionId = $('Create Email Session').item.json.id || '';\n\n// Hole Parent Ticket ID vom vorherigen Node\nconst ticketId = $('Get Parent Ticket ID').item.json.hubspot_ticket_id || '';\n\n// Erstelle HTML für HubSpot Note\nlet conversationHtml = '<h3>📧 FOLLOW-UP E-MAIL</h3>';\nconversationHtml += `<p><strong>Session ID:</strong> ${sessionId}</p>`;\nconversationHtml += `<p><strong>Von:</strong> ${emailFrom}</p>`;\nconversationHtml += `<p><strong>Betreff:</strong> ${emailSubject}</p>`;\nconversationHtml += '<hr>';\nconversationHtml += '<h4>Nachricht:</h4>';\nconversationHtml += `<p>${emailContent.replace(/\\n/g, '<br>')}</p>`;\n\nreturn {\n  json: {\n    hs_note_body: conversationHtml,\n    hs_email_subject: `Follow-Up: ${emailSubject}`,\n    ticketId: ticketId,\n    emailFrom: emailFrom\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        800
+      ],
+      "id": "4c771fb9-2762-42df-935a-629e69e601dc",
+      "name": "E-Mail Generierung mit Follow-Up"
+    },
+    {
+      "parameters": {
+        "jsCode": "// E-Mail Daten aus den vorherigen Nodes holen\nconst emailFrom = $('Extract Contact Info').item.json.email || '';\nconst emailSubject = $('Generate Session ID').item.json.email_subject || '(Kein Betreff)';\nconst emailContent = $('Generate Session ID').item.json.email_plain || '';\nconst sessionId = $('Generate Session ID').item.json.session_id || '';\nconst ticketId = $('Erstellung von Ticket in HubSpot').item.json.objectId || '';\n\n// Erstelle HTML für HubSpot Note\nlet conversationHtml = '<h3>📧 E-MAIL KONVERSATION</h3>';\nconversationHtml += `<p><strong>Session ID:</strong> ${sessionId}</p>`;\nconversationHtml += `<p><strong>Von:</strong> ${emailFrom}</p>`;\nconversationHtml += `<p><strong>Betreff:</strong> ${emailSubject}</p>`;\nconversationHtml += '<hr>';\nconversationHtml += '<h4>Nachricht:</h4>';\nconversationHtml += `<p>${emailContent.replace(/\\n/g, '<br>')}</p>`;\n\nreturn {\n  json: {\n    hs_note_body: conversationHtml,\n    hs_email_subject: `E-Mail: ${emailSubject}`,\n    ticketId: ticketId\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1360,
+        560
+      ],
+      "id": "1a89c240-d446-4dc1-8a59-26583f504431",
+      "name": "E-Mail Generierung mit E-Mail"
+    },
+    {
+      "parameters": {
+        "authentication": "appToken",
+        "resource": "engagement",
+        "type": "email",
+        "metadata": {
+          "fromEmail": "={{ $json.emailFrom }}",
+          "html": "={{ $json.hs_note_body }}",
+          "subject": "={{ $json.hs_email_subject }}",
+          "toEmail": [
+            "={{ $json.emailTo }}"
+          ]
+        },
+        "additionalFields": {
+          "associations": {
+            "ticketIds": "={{ $json.ticketId }}"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        416,
+        800
+      ],
+      "id": "44a2c127-fa0a-4144-ba81-6061d8fde2f5",
+      "name": "Follow-Up Email in Ticket schreiben",
+      "credentials": {
+        "hubspotAppToken": {
+          "id": "QvkQ600AL5fGJwLH",
+          "name": "HubSpot App Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a5b8d532-72a2-41e8-951f-dd28de10ff5d",
+              "leftValue": "={{ Object.keys($input.item.binary || {}).length > 0 }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1840,
+        768
+      ],
+      "id": "b9bb5b0e-0766-4c6d-8a28-8ac7343a2c2d",
+      "name": "Check for Attachments"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1392,
+        784
+      ],
+      "id": "5cc3bca1-3a84-4d13-a488-0649114034ab",
+      "name": "Process Each Attachment"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://blqsjcceqtptxhmggvyp.supabase.co/storage/v1/object/email-documents/{{ $('Create Email Session').item.json.session_id }}/{{ $json.filename }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "={{ $json.mimeType }}"
+            },
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscXNqY2NlcXRwdHhobWdndnlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU4NTcyMSwiZXhwIjoyMDczMTYxNzIxfQ.d25Gz74yp95hNlCRB-71PvDrgsrru8xBXGj0rdZBFmY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "=Body: {{ $binary.attachment }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1104,
+        768
+      ],
+      "id": "1739f61d-914e-4143-a4c1-4f69756e10b1",
+      "name": "Upload to Supabase Storage",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rRZKHRedGDEVjdPD",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "email_attachments",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "session_id",
+              "fieldValue": "={{ $('Create Email Session').item.json.id }}"
+            },
+            {
+              "fieldId": "filename",
+              "fieldValue": "={{ $json.filename }}"
+            },
+            {
+              "fieldId": "mime_type",
+              "fieldValue": "={{ $json.mimeType }}"
+            },
+            {
+              "fieldId": "file_size",
+              "fieldValue": "={{ $json.size }}"
+            },
+            {
+              "fieldId": "storage_path",
+              "fieldValue": "={{ $('Create Email Session').item.json.session_id }}/{{ $json.filename }}"
+            },
+            {
+              "fieldId": "created_at",
+              "fieldValue": "={{ $now.toISO() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -864,
+        768
+      ],
+      "id": "49a1f5ad-5508-4975-8c3a-f6ce53b07fca",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "ZyERL8RlslL8WfPe",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7ce7ccd6-1e48-4e37-89b0-9c919925b54c",
+              "name": "session_id",
+              "value": "={{ $('Create Email Session').first().json.session_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        784
+      ],
+      "id": "005ab15c-3ebc-4b0c-9b21-5f4c7d82ceab",
+      "name": "Add Session ID"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://api.hubapi.com/crm/v3/objects/tickets/{{ $json.objectId }}\n",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"properties\": {\n    \"last_customer_email_received_at\": \"{{ $node['Generate Session ID'].json.email_date }}\"\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        224
+      ],
+      "id": "fa48e957-4194-49b3-9986-e93e2181e7b7",
+      "name": "HTTP Request",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "rRZKHRedGDEVjdPD",
+          "name": "Header Auth account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Erstellung von Ticket in HubSpot": {
+      "main": [
+        [
+          {
+            "node": "Update Session with Ticket ID",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Session ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Session ID": {
+      "main": [
+        [
+          {
+            "node": "Check Thread Hierarchy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Email Session": {
+      "main": [
+        [
+          {
+            "node": "Need New Ticket?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check for Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Session with Ticket ID": {
+      "main": [
+        [
+          {
+            "node": "Save Email Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Email Message": {
+      "main": [
+        [
+          {
+            "node": "Extract Contact Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Contact Info": {
+      "main": [
+        [
+          {
+            "node": "E-Mail normalisieren",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create or Update Profile": {
+      "main": [
+        [
+          {
+            "node": "Verknüpfe Kontakt mit Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email in Ticket schreiben": {
+      "main": [
+        [
+          {
+            "node": "Send Auto-Reply Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail normalisieren": {
+      "main": [
+        [
+          {
+            "node": "Search contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verknüpfe Kontakt mit Ticket": {
+      "main": [
+        [
+          {
+            "node": "E-Mail Generierung mit E-Mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search contacts": {
+      "main": [
+        [
+          {
+            "node": "Create or Update Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Berechne nächsten Agent": {
+      "main": [
+        [
+          {
+            "node": "Ticket in HubSpot zuweisen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ticket Status Update \"In Bearbeitung\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ticket in HubSpot zuweisen": {
+      "main": [
+        [
+          {
+            "node": "Update Round-Robin Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hole Team-Mitarbeiter": {
+      "main": [
+        [
+          {
+            "node": "Berechne nächsten Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Hole Team-Mitarbeiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Thread Hierarchy": {
+      "main": [
+        [
+          {
+            "node": "Is Reply or Follow-up?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Reply or Follow-up?": {
+      "main": [
+        [
+          {
+            "node": "Find Parent Session",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Email Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Need New Ticket?": {
+      "main": [
+        [
+          {
+            "node": "Erstellung von Ticket in HubSpot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Parent Ticket ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Parent Session": {
+      "main": [
+        [
+          {
+            "node": "Handle Missing Parent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Missing Parent": {
+      "main": [
+        [
+          {
+            "node": "Create Email Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Parent Ticket ID": {
+      "main": [
+        [
+          {
+            "node": "Update a ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a ticket": {
+      "main": [
+        [
+          {
+            "node": "E-Mail Generierung mit Follow-Up",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail Generierung mit Follow-Up": {
+      "main": [
+        [
+          {
+            "node": "Follow-Up Email in Ticket schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "E-Mail Generierung mit E-Mail": {
+      "main": [
+        [
+          {
+            "node": "Email in Ticket schreiben",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Each Attachment": {
+      "main": [
+        [
+          {
+            "node": "Upload to Supabase Storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload to Supabase Storage": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Session ID": {
+      "main": [
+        [
+          {
+            "node": "Process Each Attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "da6c270b-1c22-4624-91c1-e24676d1ed39",
+  "activeVersionId": "da6c270b-1c22-4624-91c1-e24676d1ed39",
+  "versionCounter": 51,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-01-25T11:13:12.489Z",
+      "createdAt": "2026-01-25T11:13:12.489Z",
+      "role": "workflow:owner",
+      "workflowId": "ml5H7lsIpKo0f-vQTLDoI",
+      "projectId": "OE5UygYAfmxdsAr7",
+      "project": {
+        "updatedAt": "2025-11-17T16:10:22.285Z",
+        "createdAt": "2025-11-17T16:07:40.393Z",
+        "id": "OE5UygYAfmxdsAr7",
+        "name": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail <jan.alexander.herrmann.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-17T16:07:40.393Z",
+            "createdAt": "2025-11-17T16:07:40.393Z",
+            "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+            "projectId": "OE5UygYAfmxdsAr7",
+            "user": {
+              "updatedAt": "2026-01-26T05:00:19.583Z",
+              "createdAt": "2025-11-17T16:07:38.239Z",
+              "id": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+              "email": "jan.alexander.herrmann.hom@gmail.com",
+              "firstName": "Jan-Alexander",
+              "lastName": "Jan.Alexander.herrmann.hom@gmail",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-17T16:10:51.964Z",
+                "personalization_survey_n8n_version": "1.119.2",
+                "companySize": "<20",
+                "companyType": "systems-integrator",
+                "role": "business-owner",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "Fl2F01hIt6DphtCw",
+                "userActivatedAt": 1763665359540,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1765391968130
+                },
+                "easyAIWorkflowOnboarded": true
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-26",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-01-25T12:05:40.089Z",
+    "createdAt": "2026-01-25T12:04:55.858Z",
+    "versionId": "da6c270b-1c22-4624-91c1-e24676d1ed39",
+    "workflowId": "ml5H7lsIpKo0f-vQTLDoI",
+    "nodes": [
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "ticket",
+          "pipelineId": "0",
+          "stageId": "3809861831",
+          "ticketName": "=={{ $('Generate Session ID').item.json.email_subject }}",
+          "additionalFields": {
+            "associatedCompanyIds": [],
+            "description": "=Von: {{ $('Generate Session ID').item.json.email_from }}\nDatum: {{ $('Generate Session ID').item.json.email_date }}\n\nNachricht:\n{{ $('Generate Session ID').item.json.email_plain }}\n"
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          -272,
+          224
+        ],
+        "id": "1e309008-285f-4a59-878a-d8ac238e1218",
+        "name": "Erstellung von Ticket in HubSpot",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "QvkQ600AL5fGJwLH",
+            "name": "HubSpot App Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "pollTimes": {
+            "item": [
+              {
+                "mode": "everyMinute"
+              }
+            ]
+          },
+          "simple": false,
+          "filters": {},
+          "options": {
+            "downloadAttachments": true
+          }
+        },
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -2080,
+          448
+        ],
+        "id": "e2c8b995-ae81-4976-8d39-ac15391e75cf",
+        "name": "E-Mail Trigger",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "OKq2j7egP8CoZAL1",
+            "name": "Gmail account Corporate"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// n8n-kompatible UUID-Generierung\nfunction generateUUID() {\n  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\n    const r = Math.random() * 16 | 0;\n    const v = c === 'x' ? r : (r & 0x3 | 0x8);\n    return v.toString(16);\n  });\n}\n\n// E-Mail-Adresse extrahieren und säubern\nfunction extractEmailAddress(fromField) {\n  if (!fromField || typeof fromField !== 'string') return '';\n  \n  // Entferne \"Delivered-To:\" oder andere Präfixe\n  let cleaned = fromField.replace(/^[^:]+:\\s*/, '').trim();\n  \n  // Extrahiere Email aus \"Name <email@domain.com>\" Format\n  const match = cleaned.match(/<(.+?)>/);\n  if (match && match[1]) {\n    return match[1];\n  }\n  \n  return cleaned;\n}\n\n// Session ID generieren\nconst sessionId = generateUUID();\n\n// Gmail Trigger Daten\nconst item = $input.item.json;\n\n// Headers\nconst headers = item.headers || {};\n\n// Email FROM: aus return-path Header (das ist der echte Absender!)\nconst emailFrom = extractEmailAddress(headers['return-path'] || '');\n\n// Email TO: aus delivered-to Header (ohne \"Delivered-To:\" Präfix)\nconst deliveredToRaw = headers['delivered-to'] || '';\nconst emailTo = extractEmailAddress(deliveredToRaw);\n\n// Subject\nconst subject = item.subject || '(Kein Betreff)';\n\n// Message ID und Thread ID\nconst messageId = item.id || '';\nconst threadId = item.threadId || '';\n\n// Datum\nconst emailDate = item.internalDate \n  ? new Date(parseInt(item.internalDate)).toISOString() \n  : new Date().toISOString();\n\n// E-Mail Inhalt\nconst emailPlain = item.textPlain || item.snippet || '';\nconst emailHtml = item.textHtml || null;\n\n// Attachments\nconst attachments = item.attachments || [];\nconst attachmentList = attachments.map(att => ({\n  filename: att.filename || 'unnamed',\n  mimeType: att.mimeType || 'application/octet-stream',\n  size: att.size || 0\n}));\n\n// Label IDs\nconst labelIds = item.labelIds || [];\n\nreturn {\n  json: {\n    session_id: sessionId,\n    email_from: emailFrom,\n    email_to: emailTo,\n    email_subject: subject,\n    email_message_id: messageId,\n    email_thread_id: threadId,\n    email_date: emailDate,\n    email_plain: emailPlain,\n    email_html: emailHtml,\n    email_headers: headers,\n    email_attachments: attachmentList,\n    label_ids: labelIds\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1808,
+          448
+        ],
+        "id": "1b5218fe-f7f5-49e8-9d63-235546bb5ba4",
+        "name": "Generate Session ID"
+      },
+      {
+        "parameters": {
+          "tableId": "email_sessions",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "id",
+                "fieldValue": "={{ $('Generate Session ID').item.json.session_id }}"
+              },
+              {
+                "fieldId": "email_from",
+                "fieldValue": "={{ $json.email_from }}"
+              },
+              {
+                "fieldId": "email_to",
+                "fieldValue": "={{ $json.email_to }}"
+              },
+              {
+                "fieldId": "email_subject",
+                "fieldValue": "={{ $json.email_subject }}"
+              },
+              {
+                "fieldId": "status",
+                "fieldValue": "open"
+              },
+              {
+                "fieldId": "topic",
+                "fieldValue": "={{ $json.email_subject }}"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              },
+              {
+                "fieldId": "parent_session_id",
+                "fieldValue": "={{ $if($('Find Parent Session').isExecuted, $('Find Parent Session').item.json.id, null) }}"
+              },
+              {
+                "fieldId": "thread_id",
+                "fieldValue": "={{ $json.email_thread_id }}"
+              },
+              {
+                "fieldId": "hierarchy_level",
+                "fieldValue": "={{ $('Check Thread Hierarchy').item.json.hierarchy_level }}"
+              },
+              {
+                "fieldId": "is_initial_contact",
+                "fieldValue": "={{ $('Check Thread Hierarchy').item.json.is_initial_contact }}"
+              },
+              {
+                "fieldId": "hubspot_ticket_id",
+                "fieldValue": "={{ $json.hubspot_ticket_id }}"
+              },
+              {
+                "fieldId": "user_identifier",
+                "fieldValue": "={{ $json.email_from }}"
+              }
+            ]
+          }
+        },
+        "id": "c59bd7d0-bedb-42b0-8f17-87dd437a860a",
+        "name": "Create Email Session",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -928,
+          464
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "email_sessions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Generate Session ID').item.json.session_id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "hubspot_ticket_id",
+                "fieldValue": "={{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}"
+              }
+            ]
+          }
+        },
+        "id": "b667fbb2-7b30-45eb-a968-8f1a2519f486",
+        "name": "Update Session with Ticket ID",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -112,
+          416
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "tableId": "email_messages",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "session_id",
+                "fieldValue": "={{ $('Generate Session ID').item.json.session_id }}"
+              },
+              {
+                "fieldId": "role",
+                "fieldValue": "user"
+              },
+              {
+                "fieldId": "input_content",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_plain }}"
+              },
+              {
+                "fieldId": "email_message_id",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_message_id }}"
+              },
+              {
+                "fieldId": "email_thread_id",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_thread_id }}"
+              },
+              {
+                "fieldId": "email_from",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_from }}"
+              },
+              {
+                "fieldId": "email_to",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_to }}"
+              },
+              {
+                "fieldId": "email_subject",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_subject }}"
+              },
+              {
+                "fieldId": "email_date",
+                "fieldValue": "={{ new Date($('Generate Session ID').item.json.email_date).toISOString() }}"
+              },
+              {
+                "fieldId": "email_plain",
+                "fieldValue": "={{ $('Generate Session ID').item.json.email_plain }}"
+              },
+              {
+                "fieldId": "direction",
+                "fieldValue": "inbound"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "ede339c9-a16d-46d9-a973-bab34467ed81",
+        "name": "Save Email Message",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          96,
+          560
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "mode": "runOnceForEachItem",
+          "jsCode": "// Extract Contact Info (n8n Code Node)\n// Ziel: Aus der eingehenden E-Mail-Adresse ein sauberes JSON erzeugen (email, first_name, last_name, session_id)\n// WICHTIG: session_id wird aus dem aktuellen Item ($json) genommen, um \"Paired item data\" Fehler zu vermeiden.\n\nconst emailRaw =\n  $json.email_from ||\n  $json.email ||\n  $json.from ||\n  $json.sender_email ||\n  null;\n\n// Falls \"From\" als \"Name <mail@domain.com>\" kommt, Mail extrahieren\nfunction normalizeEmail(input) {\n  if (!input) return null;\n  const s = String(input).trim();\n\n  // Match: <mail@domain.com>\n  const angleMatch = s.match(/<([^>]+)>/);\n  const candidate = (angleMatch?.[1] || s).trim();\n\n  // Basic cleanup\n  return candidate.toLowerCase();\n}\n\nfunction extractNameFromEmail(email) {\n  if (!email) return { first_name: null, last_name: null, full_name: null };\n\n  const localPart = email.split(\"@\")[0] || \"\";\n\n  // Trennzeichen: ., _, -, plus (plus ist häufig bei Aliases)\n  const parts = localPart\n    .split(/[._\\-+]+/g)\n    .map(p => p.trim())\n    .filter(Boolean);\n\n  const cap = (v) => v ? (v.charAt(0).toUpperCase() + v.slice(1)) : null;\n\n  const first = parts[0] ? cap(parts[0]) : null;\n  const last = parts.length > 1 ? cap(parts[1]) : null;\n\n  return {\n    first_name: first,\n    last_name: last,\n    full_name: [first, last].filter(Boolean).join(\" \") || null,\n  };\n}\n\nconst email = normalizeEmail(emailRaw);\nconst nameInfo = extractNameFromEmail(email);\n\n// Session ID robust aus dem aktuellen Item holen\n// (falls sie anders heißt, ergänze hier weitere Fallbacks)\nconst session_id =\n  $json.session_id ||\n  $json.sessionId ||\n  $json.session ||\n  null;\n\nreturn {\n  json: {\n    email,\n    first_name: nameInfo.first_name,\n    last_name: nameInfo.last_name,\n    full_name: nameInfo.full_name,\n    session_id,\n  }\n};\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          320,
+          560
+        ],
+        "id": "9052aa1b-8375-488a-9d5f-00cea835cfd3",
+        "name": "Extract Contact Info"
+      },
+      {
+        "parameters": {
+          "tableId": "profiles"
+        },
+        "id": "83732352-39e7-4d73-a266-a759e4360018",
+        "name": "Create or Update Profile",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          912,
+          560
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "engagement",
+          "type": "email",
+          "metadata": {
+            "fromEmail": "={{ $('Extract Contact Info').item.json.email }}",
+            "html": "={{ $('E-Mail Generierung mit E-Mail').item.json.hs_note_body }}",
+            "subject": "={{ $('E-Mail Generierung mit E-Mail').item.json.hs_email_subject }}",
+            "toEmail": [
+              "={{ $('Extract Contact Info').item.json.email }}"
+            ]
+          },
+          "additionalFields": {
+            "associations": {
+              "ticketIds": "={{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}"
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          1600,
+          560
+        ],
+        "id": "9ef68405-7e06-4c7f-8d7b-5e199be936ff",
+        "name": "Email in Ticket schreiben",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "QvkQ600AL5fGJwLH",
+            "name": "HubSpot App Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "return items.map(i => {\n  i.json.email = (i.json.email || '').trim().toLowerCase();\n  return i;\n});\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          512,
+          560
+        ],
+        "id": "c1f730f2-d1f6-46ea-bc72-b068e961427b",
+        "name": "E-Mail normalisieren"
+      },
+      {
+        "parameters": {
+          "method": "PUT",
+          "url": "=https://api.hubapi.com/crm/v3/objects/tickets/{{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}/associations/contacts/{{ $('Search contacts').item.json.id }}/16",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "[\n  {\n    \"associationCategory\": \"HUBSPOT_DEFINED\",\n    \"associationTypeId\": 16\n  }\n]",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1120,
+          560
+        ],
+        "id": "dc2c3fd8-dd05-420b-8440-5643882401ee",
+        "name": "Verknüpfe Kontakt mit Ticket",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "rRZKHRedGDEVjdPD",
+            "name": "Header Auth account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "operation": "search",
+          "limit": 1,
+          "filterGroupsUi": {
+            "filterGroupsValues": [
+              {
+                "filtersUi": {
+                  "filterValues": [
+                    {
+                      "propertyName": "email|string",
+                      "value": "={{$json.email}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          704,
+          560
+        ],
+        "id": "e8756770-3f16-460e-8e14-aaf07a480dc7",
+        "name": "Search contacts",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "QvkQ600AL5fGJwLH",
+            "name": "HubSpot App Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// --- 1) Inputs holen ---\nconst assigneeRaw = $('Execute a SQL query').first().json.assignee;\nconst assignee = String(assigneeRaw || '').trim();\n\nconst ticketId = $('Erstellung von Ticket in HubSpot').first().json.objectId;\n\n// Team-Member aus Supabase (optional für Email/Name)\nconst teamItems = $('Hole Team-Mitarbeiter').all();\nconst teamMembers = teamItems.map(i => i.json);\n\n// --- 2) Fixes Mapping (Assignee -> HubSpot Owner ID) ---\nconst HUBSPOT_OWNER_MAP = {\n  'Guyvany': 31019350,\n  'Jan H': 85241193,\n  'Sebastian': 31019353,\n};\n\n// --- 3) Reihenfolge für nextIndex (WICHTIG: an eure Erwartung anpassen) ---\n// Beispiel-Order so, dass Sebastian -> nextIndex 1 möglich ist, wenn Sebastian 2. Position ist.\n// Passe die Reihenfolge exakt so an, wie ihr \"Index\" interpretieren wollt.\nconst ORDER = ['Guyvany', 'Sebastian', 'Jan H'];\n\n// --- 4) HubSpot Owner ID auflösen ---\nconst agentHubspotId = HUBSPOT_OWNER_MAP[assignee];\nif (!agentHubspotId) {\n  throw new Error(\n    `Unbekannter assignee=\"${assignee}\". Erwartet: ${Object.keys(HUBSPOT_OWNER_MAP).join(', ')}`\n  );\n}\n\n// --- 5) Optional: Email/Name aus team_members holen ---\nconst matchedMember =\n  teamMembers.find(m => String(m.name || '').trim() === assignee) ||\n  teamMembers.find(m => String(m.name || '').toLowerCase().includes(assignee.toLowerCase())) ||\n  teamMembers.find(m => Number(m.hubspot_owner_id) === Number(agentHubspotId));\n\nconst agentEmail = matchedMember?.email || '';\nconst agentName = matchedMember?.name || assignee;\n\n// --- 6) totalAgents & nextIndex bestimmen ---\nconst totalAgents = teamMembers.length > 0 ? teamMembers.length : Object.keys(HUBSPOT_OWNER_MAP).length;\n\n// nextIndex = Position des Assignee in ORDER (0-basiert). Fallback: 0\nlet nextIndex = ORDER.findIndex(n => n === assignee);\nif (nextIndex === -1) nextIndex = 0;\n\n// --- 7) Output exakt wie gewünscht ---\nreturn [{\n  json: {\n    ticketId: String(ticketId),\n    agentHubspotId: Number(agentHubspotId),\n    agentEmail: String(agentEmail),\n    agentName: String(agentName),\n    nextIndex: Number(nextIndex),\n    totalAgents: Number(totalAgents),\n  }\n}];\n"
+        },
+        "id": "ca6c717f-ce97-48f0-8f2e-85cc042768ff",
+        "name": "Berechne nächsten Agent",
+        "type": "n8n-nodes-base.code",
+        "position": [
+          464,
+          0
+        ],
+        "typeVersion": 2
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "ticket",
+          "operation": "update",
+          "ticketId": {
+            "__rl": true,
+            "value": "={{$node[\"Erstellung von Ticket in HubSpot\"].json.objectId}}\n",
+            "mode": "id"
+          },
+          "updateFields": {
+            "ticketOwnerId": "={{ $json.agentHubspotId }}"
+          }
+        },
+        "id": "58114e33-9df6-4c0b-ba9e-e4f6a102eeeb",
+        "name": "Ticket in HubSpot zuweisen",
+        "type": "n8n-nodes-base.hubspot",
+        "position": [
+          768,
+          0
+        ],
+        "typeVersion": 2,
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "LHRoG7tXEtR8p93h",
+            "name": "HubSpot App Token account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "update",
+          "tableId": "ticket_assignment_state",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "condition": "eq",
+                "keyValue": "={{ $('Hole Round-Robin Status').first().json.id }}"
+              }
+            ]
+          },
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "last_assigned_agent_index",
+                "fieldValue": "={{ $json.nextIndex }}"
+              },
+              {
+                "fieldId": "total_agents",
+                "fieldValue": "={{ $json.totalAgents }}"
+              },
+              {
+                "fieldId": "updated_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "id": "fdb97c93-dc05-4fa9-a55e-c995fe326842",
+        "name": "Update Round-Robin Status",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          992,
+          0
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        },
+        "disabled": true,
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "team_members",
+          "returnAll": true,
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "status",
+                "condition": "eq",
+                "keyValue": "active"
+              }
+            ]
+          }
+        },
+        "id": "87786957-7b09-4be6-8d26-303307a4cfb4",
+        "name": "Hole Team-Mitarbeiter",
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          224,
+          0
+        ],
+        "alwaysOutputData": false,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "ticket",
+          "operation": "update",
+          "ticketId": {
+            "__rl": true,
+            "value": "={{ $json.ticketId }}",
+            "mode": "id"
+          },
+          "updateFields": {
+            "stageId": "={{ \"4232446185\" }}"
+          }
+        },
+        "id": "e1a1d2f6-7371-4c5e-a5c3-534db6c9242c",
+        "name": "Ticket Status Update \"In Bearbeitung\"",
+        "type": "n8n-nodes-base.hubspot",
+        "position": [
+          768,
+          224
+        ],
+        "typeVersion": 2,
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "QvkQ600AL5fGJwLH",
+            "name": "HubSpot App Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "executeQuery",
+          "query": "select public.get_next_assignee(\n  array['Guyvany','Jan H','Sebastian']\n) as assignee;\n",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.postgres",
+        "typeVersion": 2.6,
+        "position": [
+          0,
+          0
+        ],
+        "id": "c64426ab-2285-48cb-9ea7-1c4c26592925",
+        "name": "Execute a SQL query",
+        "credentials": {
+          "postgres": {
+            "id": "YhIS9TbQifYblg0R",
+            "name": "Postgres account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "sendTo": "={{ $('Extract Contact Info').item.json.email }}",
+          "subject": "=Re: {{ $('Generate Session ID').item.json.email_subject }}",
+          "message": "=<!DOCTYPE html> <html> <head>     <meta charset=\"UTF-8\">     <style>         body {             font-family: Arial, sans-serif;             line-height: 1.6;             color: #333;         }         .container {             max-width: 600px;             margin: 0 auto;             padding: 20px;         }         .header {             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);             color: white;             padding: 30px 20px;             text-align: center;             border-radius: 10px 10px 0 0;         }         .content {             background: #ffffff;             padding: 30px 20px;             border: 1px solid #e0e0e0;         }         .footer {             background: #f5f5f5;             padding: 20px;             text-align: center;             font-size: 12px;             color: #666;             border-radius: 0 0 10px 10px;         }         .ticket-info {             background: #f0f7ff;             padding: 15px;             border-left: 4px solid #667eea;             margin: 20px 0;         }         .button {             display: inline-block;             padding: 12px 30px;             background: #667eea;             color: white;             text-decoration: none;             border-radius: 5px;             margin-top: 20px;         }     </style> </head> <body>     <div class=\"container\">         <div class=\"header\">             <h1>✅ Ihre Anfrage wurde empfangen</h1>         </div>                  <div class=\"content\">             <p>Sehr geehrte/r {{ $('Extract Contact Info').item.json.first_name || 'Kunde/Kundin' }},</p>                          <p>vielen Dank für Ihre Nachricht. Wir haben Ihre Anfrage erhalten und werden uns zeitnah bei Ihnen melden.</p>                          <div class=\"ticket-info\">                 <strong>📋 Ihre Referenznummer:</strong><br>                 Ticket-ID: {{ $('Erstellung von Ticket in HubSpot').item.json.objectId }}<br>                 Session-ID: {{ $('Generate Session ID').item.json.session_id }}             </div>                          <p><strong>Ihre Anfrage:</strong><br>             <em>{{ $('Generate Session ID').item.json.email_subject }}</em></p>                          <p>Unser Team bearbeitet Ihr Anliegen mit höchster Priorität. In der Regel erhalten Sie innerhalb von <strong>24 Stunden</strong> eine Rückmeldung von uns.</p>                          <p>Bei dringenden Anliegen können Sie uns auch telefonisch erreichen.</p>         </div>                  <div class=\"footer\">             <p><strong>H.O.M. Smart Service UG</strong></p>             <p>📧 kontakt.homsmartservice@gmail.com</p>             <p>Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht.</p>         </div>     </div> </body> </html> ```  ---  ## **Alternative: Einfachere Text-Version**  Falls du lieber eine schlichtere Version willst:  **Message Type**: **Text**  **Message (Text):** ``` Sehr geehrte/r {{ $('Extract Contact Info').item.json.first_name || 'Kunde/Kundin' }},  vielen Dank für Ihre Nachricht vom {{ $now.format('dd.MM.yyyy') }}.  Wir haben Ihre Anfrage erhalten und bearbeiten diese mit höchster Priorität.  📋 IHRE REFERENZ: Ticket-ID: {{ $('Erstellung von Ticket in HubSpot').item.json.objectId }} Session-ID: {{ $('Generate Session ID').item.json.session_id }}  📝 IHR ANLIEGEN: {{ $('Generate Session ID').item.json.email_subject }}  ⏱️ BEARBEITUNGSZEIT: Unser Team wird sich innerhalb von 24 Stunden bei Ihnen melden.  Bei dringenden Anliegen erreichen Sie uns auch telefonisch.  Mit freundlichen Grüßen Ihr Team von H.O.M. Smart Service UG  --- H.O.M. Smart Service UG 📧 kontakt.homsmartservice@gmail.com  Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht. ```  ---  ## **Optional: CC oder BCC hinzufügen**  Falls du intern eine Kopie haben willst:  **BCC:** ``` kontakt.homsmartservice@gmail.com ```  ---  ## **Finaler Workflow:** ``` [Gmail Trigger]   ↓ [Generate Session ID]   ↓ [Create Email Session]   ↓ [Create HubSpot Ticket]   ↓ [Update Session with Ticket ID]   ↓ [Save Email Message]   ↓ [Extract Contact Info]   ↓ [Search or Create Contact]   ↓ [Link Contact to Ticket]   ↓ [Create or Update Profile]   ↓ [Generate Email Note]   ↓ [Add Note to Ticket]   ↓ [Send Auto-Reply Email] ← NEU! ✉️",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.2,
+        "position": [
+          1824,
+          560
+        ],
+        "id": "eb0cbb7d-8e06-4dfb-82f9-e2e88e74309e",
+        "name": "Send Auto-Reply Email",
+        "webhookId": "514adbc2-d252-4d64-8760-970b59ac4446",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "OKq2j7egP8CoZAL1",
+            "name": "Gmail account Corporate"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// E-Mail Daten vom vorherigen Node holen\nconst emailData = $input.item.json;\n\n// Gmail Thread ID und Message IDs extrahieren\nconst threadId = emailData.email_thread_id || '';\nconst messageId = emailData.email_message_id || '';\nconst inReplyTo = emailData.in_reply_to || '';\n\n// Prüfen ob es sich um eine Antwort handelt\nconst isReply = Boolean(inReplyTo) || emailData.email_subject?.startsWith('Re:') || emailData.email_subject?.startsWith('AW:');\n\n// Thread Hierarchy Daten zusammenstellen\nconst checkThreadData = {\n  thread_id: threadId,\n  message_id: messageId,\n  in_reply_to: inReplyTo,\n  is_reply: isReply\n};\n\n// Parent Session ID und Hierarchy ermitteln\nlet parentSessionId = null;\nlet hierarchyLevel = 0;\n\nif (isReply && threadId) {\n  // Wenn es eine Reply ist, setze Hierarchy Level\n  hierarchyLevel = 1; // Erstmal als Level 1 setzen\n  // parentSessionId wird später durch \"Find Parent Session\" ermittelt\n}\n\nreturn {\n  json: {\n    ...emailData,\n    checkThreadData,\n    is_initial_contact: !isReply,\n    is_reply: isReply,\n    parent_session_id: parentSessionId,  // NEU!\n    hierarchy_level: hierarchyLevel,      // NEU!\n    thread_id: threadId,\n    hubspot_ticket_id: null\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1616,
+          448
+        ],
+        "id": "86352b53-4dc5-4615-a2cf-dd658f0cca6b",
+        "name": "Check Thread Hierarchy"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "2cc362b1-0545-4e7a-acfa-511faa5d0b61",
+                "leftValue": "={{ $json.is_reply }}",
+                "rightValue": "true",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -1424,
+          448
+        ],
+        "id": "ce8496e0-b590-423e-b404-252678345424",
+        "name": "Is Reply or Follow-up?"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "2cc362b1-0545-4e7a-acfa-511faa5d0b61",
+                "leftValue": "={{ $('Check Thread Hierarchy').item.json.is_initial_contact }}",
+                "rightValue": "true",
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true",
+                  "singleValue": true
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -480,
+          464
+        ],
+        "id": "66e587c0-53f9-4854-b9b5-03fe16678604",
+        "name": "Need New Ticket?"
+      },
+      {
+        "parameters": {
+          "operation": "getAll",
+          "tableId": "email_sessions",
+          "limit": 100,
+          "matchType": "allFilters",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "thread_id",
+                "condition": "eq",
+                "keyValue": "={{ $json.thread_id }}"
+              },
+              {
+                "keyName": "is_initial_contact",
+                "condition": "eq",
+                "keyValue": "true"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -1296,
+          224
+        ],
+        "id": "0da604f4-b944-4505-855b-ad14ab3e183d",
+        "name": "Find Parent Session",
+        "alwaysOutputData": true,
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const findParentResult = $input.all();\nconst checkThreadData = $('Check Thread Hierarchy').first().json;\n\n// Wenn keine Parent Session gefunden wurde\nif (findParentResult.length === 0) {\n  // Behandle als Initial Contact\n  return [{\n    json: {\n      ...checkThreadData,\n      is_initial_contact: true,\n      is_reply: false,\n      parent_session_id: null,\n      hierarchy_level: 0,\n      hubspot_ticket_id: null\n    }\n  }];\n}\n\n// Wenn Parent gefunden wurde, gib die Parent Session zurück\nreturn findParentResult;"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          -1104,
+          224
+        ],
+        "id": "2839199d-48c3-4082-92f9-c366dc9142df",
+        "name": "Handle Missing Parent"
+      },
+      {
+        "parameters": {
+          "operation": "get",
+          "tableId": "email_sessions",
+          "filters": {
+            "conditions": [
+              {
+                "keyName": "id",
+                "keyValue": "={{ $('Create Email Session').item.json.parent_session_id }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -208,
+          800
+        ],
+        "id": "9c2370bf-94d1-458c-8915-687f7e92e392",
+        "name": "Get Parent Ticket ID",
+        "credentials": {
+          "supabaseApi": {
+            "id": "GQTOgRstpDpeHMX6",
+            "name": "Supabase account 3"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "ticket",
+          "operation": "update",
+          "ticketId": {
+            "__rl": true,
+            "value": "={{ $('Get Parent Ticket ID').item.json.hubspot_ticket_id }}",
+            "mode": "id"
+          },
+          "updateFields": {}
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          0,
+          800
+        ],
+        "id": "cae387fb-566f-45db-8a0c-d296c29f3b09",
+        "name": "Update a ticket",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "LHRoG7tXEtR8p93h",
+            "name": "HubSpot App Token account 2"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// E-Mail Daten aus den vorherigen Nodes holen\nconst emailFrom = $('Create Email Session').item.json.email_from || '';\nconst emailSubject = $('Create Email Session').item.json.email_subject || '';\n\n// WICHTIG: Hole email_plain vom ursprünglichen E-Mail Input!\nconst emailContent = $('Is Reply or Follow-up?').item.json.email_plain || '';\n\nconst sessionId = $('Create Email Session').item.json.id || '';\n\n// Hole Parent Ticket ID vom vorherigen Node\nconst ticketId = $('Get Parent Ticket ID').item.json.hubspot_ticket_id || '';\n\n// Erstelle HTML für HubSpot Note\nlet conversationHtml = '<h3>📧 FOLLOW-UP E-MAIL</h3>';\nconversationHtml += `<p><strong>Session ID:</strong> ${sessionId}</p>`;\nconversationHtml += `<p><strong>Von:</strong> ${emailFrom}</p>`;\nconversationHtml += `<p><strong>Betreff:</strong> ${emailSubject}</p>`;\nconversationHtml += '<hr>';\nconversationHtml += '<h4>Nachricht:</h4>';\nconversationHtml += `<p>${emailContent.replace(/\\n/g, '<br>')}</p>`;\n\nreturn {\n  json: {\n    hs_note_body: conversationHtml,\n    hs_email_subject: `Follow-Up: ${emailSubject}`,\n    ticketId: ticketId,\n    emailFrom: emailFrom\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          208,
+          800
+        ],
+        "id": "4c771fb9-2762-42df-935a-629e69e601dc",
+        "name": "E-Mail Generierung mit Follow-Up"
+      },
+      {
+        "parameters": {
+          "jsCode": "// E-Mail Daten aus den vorherigen Nodes holen\nconst emailFrom = $('Extract Contact Info').item.json.email || '';\nconst emailSubject = $('Generate Session ID').item.json.email_subject || '(Kein Betreff)';\nconst emailContent = $('Generate Session ID').item.json.email_plain || '';\nconst sessionId = $('Generate Session ID').item.json.session_id || '';\nconst ticketId = $('Erstellung von Ticket in HubSpot').item.json.objectId || '';\n\n// Erstelle HTML für HubSpot Note\nlet conversationHtml = '<h3>📧 E-MAIL KONVERSATION</h3>';\nconversationHtml += `<p><strong>Session ID:</strong> ${sessionId}</p>`;\nconversationHtml += `<p><strong>Von:</strong> ${emailFrom}</p>`;\nconversationHtml += `<p><strong>Betreff:</strong> ${emailSubject}</p>`;\nconversationHtml += '<hr>';\nconversationHtml += '<h4>Nachricht:</h4>';\nconversationHtml += `<p>${emailContent.replace(/\\n/g, '<br>')}</p>`;\n\nreturn {\n  json: {\n    hs_note_body: conversationHtml,\n    hs_email_subject: `E-Mail: ${emailSubject}`,\n    ticketId: ticketId\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1360,
+          560
+        ],
+        "id": "1a89c240-d446-4dc1-8a59-26583f504431",
+        "name": "E-Mail Generierung mit E-Mail"
+      },
+      {
+        "parameters": {
+          "authentication": "appToken",
+          "resource": "engagement",
+          "type": "email",
+          "metadata": {
+            "fromEmail": "={{ $json.emailFrom }}",
+            "html": "={{ $json.hs_note_body }}",
+            "subject": "={{ $json.hs_email_subject }}",
+            "toEmail": [
+              "={{ $json.emailTo }}"
+            ]
+          },
+          "additionalFields": {
+            "associations": {
+              "ticketIds": "={{ $json.ticketId }}"
+            }
+          }
+        },
+        "type": "n8n-nodes-base.hubspot",
+        "typeVersion": 2.2,
+        "position": [
+          416,
+          800
+        ],
+        "id": "44a2c127-fa0a-4144-ba81-6061d8fde2f5",
+        "name": "Follow-Up Email in Ticket schreiben",
+        "credentials": {
+          "hubspotAppToken": {
+            "id": "QvkQ600AL5fGJwLH",
+            "name": "HubSpot App Token account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "a5b8d532-72a2-41e8-951f-dd28de10ff5d",
+                "leftValue": "={{ Object.keys($input.item.binary || {}).length > 0 }}",
+                "rightValue": 0,
+                "operator": {
+                  "type": "number",
+                  "operation": "gt"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -1840,
+          768
+        ],
+        "id": "b9bb5b0e-0766-4c6d-8a28-8ac7343a2c2d",
+        "name": "Check for Attachments"
+      },
+      {
+        "parameters": {
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitInBatches",
+        "typeVersion": 3,
+        "position": [
+          -1392,
+          784
+        ],
+        "id": "5cc3bca1-3a84-4d13-a488-0649114034ab",
+        "name": "Process Each Attachment"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=https://blqsjcceqtptxhmggvyp.supabase.co/storage/v1/object/email-documents/{{ $('Create Email Session').item.json.session_id }}/{{ $json.filename }}",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "={{ $json.mimeType }}"
+              },
+              {
+                "name": "apikey",
+                "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJscXNqY2NlcXRwdHhobWdndnlwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzU4NTcyMSwiZXhwIjoyMDczMTYxNzIxfQ.d25Gz74yp95hNlCRB-71PvDrgsrru8xBXGj0rdZBFmY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "contentType": "raw",
+          "body": "=Body: {{ $binary.attachment }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          -1104,
+          768
+        ],
+        "id": "1739f61d-914e-4143-a4c1-4f69756e10b1",
+        "name": "Upload to Supabase Storage",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "rRZKHRedGDEVjdPD",
+            "name": "Header Auth account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "tableId": "email_attachments",
+          "fieldsUi": {
+            "fieldValues": [
+              {
+                "fieldId": "session_id",
+                "fieldValue": "={{ $('Create Email Session').item.json.id }}"
+              },
+              {
+                "fieldId": "filename",
+                "fieldValue": "={{ $json.filename }}"
+              },
+              {
+                "fieldId": "mime_type",
+                "fieldValue": "={{ $json.mimeType }}"
+              },
+              {
+                "fieldId": "file_size",
+                "fieldValue": "={{ $json.size }}"
+              },
+              {
+                "fieldId": "storage_path",
+                "fieldValue": "={{ $('Create Email Session').item.json.session_id }}/{{ $json.filename }}"
+              },
+              {
+                "fieldId": "created_at",
+                "fieldValue": "={{ $now.toISO() }}"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.supabase",
+        "typeVersion": 1,
+        "position": [
+          -864,
+          768
+        ],
+        "id": "49a1f5ad-5508-4975-8c3a-f6ce53b07fca",
+        "name": "Create a row",
+        "credentials": {
+          "supabaseApi": {
+            "id": "ZyERL8RlslL8WfPe",
+            "name": "Supabase account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "7ce7ccd6-1e48-4e37-89b0-9c919925b54c",
+                "name": "session_id",
+                "value": "={{ $('Create Email Session').first().json.session_id }}",
+                "type": "string"
+              }
+            ]
+          },
+          "includeOtherFields": true,
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          -1600,
+          784
+        ],
+        "id": "005ab15c-3ebc-4b0c-9b21-5f4c7d82ceab",
+        "name": "Add Session ID"
+      },
+      {
+        "parameters": {
+          "method": "PATCH",
+          "url": "=https://api.hubapi.com/crm/v3/objects/tickets/{{ $json.objectId }}\n",
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpHeaderAuth",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"properties\": {\n    \"last_customer_email_received_at\": \"{{ $node['Generate Session ID'].json.email_date }}\"\n  }\n}\n",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          0,
+          224
+        ],
+        "id": "fa48e957-4194-49b3-9986-e93e2181e7b7",
+        "name": "HTTP Request",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "rRZKHRedGDEVjdPD",
+            "name": "Header Auth account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Erstellung von Ticket in HubSpot": {
+        "main": [
+          [
+            {
+              "node": "Update Session with Ticket ID",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Execute a SQL query",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "E-Mail Trigger": {
+        "main": [
+          [
+            {
+              "node": "Generate Session ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Generate Session ID": {
+        "main": [
+          [
+            {
+              "node": "Check Thread Hierarchy",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create Email Session": {
+        "main": [
+          [
+            {
+              "node": "Need New Ticket?",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Check for Attachments",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update Session with Ticket ID": {
+        "main": [
+          [
+            {
+              "node": "Save Email Message",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Save Email Message": {
+        "main": [
+          [
+            {
+              "node": "Extract Contact Info",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Extract Contact Info": {
+        "main": [
+          [
+            {
+              "node": "E-Mail normalisieren",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Create or Update Profile": {
+        "main": [
+          [
+            {
+              "node": "Verknüpfe Kontakt mit Ticket",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Email in Ticket schreiben": {
+        "main": [
+          [
+            {
+              "node": "Send Auto-Reply Email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "E-Mail normalisieren": {
+        "main": [
+          [
+            {
+              "node": "Search contacts",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Verknüpfe Kontakt mit Ticket": {
+        "main": [
+          [
+            {
+              "node": "E-Mail Generierung mit E-Mail",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Search contacts": {
+        "main": [
+          [
+            {
+              "node": "Create or Update Profile",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Berechne nächsten Agent": {
+        "main": [
+          [
+            {
+              "node": "Ticket in HubSpot zuweisen",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Ticket Status Update \"In Bearbeitung\"",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ticket in HubSpot zuweisen": {
+        "main": [
+          [
+            {
+              "node": "Update Round-Robin Status",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hole Team-Mitarbeiter": {
+        "main": [
+          [
+            {
+              "node": "Berechne nächsten Agent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Execute a SQL query": {
+        "main": [
+          [
+            {
+              "node": "Hole Team-Mitarbeiter",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Check Thread Hierarchy": {
+        "main": [
+          [
+            {
+              "node": "Is Reply or Follow-up?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Reply or Follow-up?": {
+        "main": [
+          [
+            {
+              "node": "Find Parent Session",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Create Email Session",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Need New Ticket?": {
+        "main": [
+          [
+            {
+              "node": "Erstellung von Ticket in HubSpot",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Get Parent Ticket ID",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Find Parent Session": {
+        "main": [
+          [
+            {
+              "node": "Handle Missing Parent",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Handle Missing Parent": {
+        "main": [
+          [
+            {
+              "node": "Create Email Session",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Get Parent Ticket ID": {
+        "main": [
+          [
+            {
+              "node": "Update a ticket",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Update a ticket": {
+        "main": [
+          [
+            {
+              "node": "E-Mail Generierung mit Follow-Up",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "E-Mail Generierung mit Follow-Up": {
+        "main": [
+          [
+            {
+              "node": "Follow-Up Email in Ticket schreiben",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "E-Mail Generierung mit E-Mail": {
+        "main": [
+          [
+            {
+              "node": "Email in Ticket schreiben",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Process Each Attachment": {
+        "main": [
+          [
+            {
+              "node": "Upload to Supabase Storage",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Upload to Supabase Storage": {
+        "main": [
+          [
+            {
+              "node": "Create a row",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Add Session ID": {
+        "main": [
+          [
+            {
+              "node": "Process Each Attachment",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail",
+    "name": "Version da6c270b",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-01-25T12:05:40.082Z",
+        "id": 191,
+        "workflowId": "ml5H7lsIpKo0f-vQTLDoI",
+        "versionId": "da6c270b-1c22-4624-91c1-e24676d1ed39",
+        "event": "activated",
+        "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f"
+      }
+    ]
+  }
+}
+
+
