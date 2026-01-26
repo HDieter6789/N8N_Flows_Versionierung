@@ -1,0 +1,305 @@
+{
+  "id": "fjZ_YITwFWg0xKJrFk_J3",
+  "name": "Voice Bot Master Flow",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          },
+          "responseKey": "data"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -208,
+        624
+      ],
+      "id": "3d1c6b3f-a4f6-4075-b52e-482e2a5b0f22",
+      "name": "HOM Voicebot Response"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "c7001cd1-fef0-458d-ba13-ad75c9b648d8",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        384
+      ],
+      "id": "21dea5a6-c085-417b-b9d6-89360a3a2de1",
+      "name": "HOM Voicebot Webhook",
+      "webhookId": "c7001cd1-fef0-458d-ba13-ad75c9b648d8"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/xml"
+              }
+            ]
+          },
+          "responseKey": "data"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -224,
+        -64
+      ],
+      "id": "21083620-c4aa-421b-aff6-51be1bf372e0",
+      "name": "G Voicebot Response"
+    },
+    {
+      "parameters": {
+        "path": "59369a96-deed-4d19-b69b-f0e4392407e6",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        144
+      ],
+      "id": "1e251d0a-0995-4861-81ae-937d366d9408",
+      "name": "G Voicebot Webhook",
+      "webhookId": "59369a96-deed-4d19-b69b-f0e4392407e6"
+    }
+  ],
+  "connections": {
+    "HOM Voicebot Webhook": {
+      "main": [
+        [
+          {
+            "node": "HOM Voicebot Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "G Voicebot Webhook": {
+      "main": [
+        [
+          {
+            "node": "G Voicebot Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "dff9775f-b67e-48ed-894b-4c70410af906",
+  "activeVersionId": "dff9775f-b67e-48ed-894b-4c70410af906",
+  "versionCounter": 44,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-01-25T15:42:42.001Z",
+      "createdAt": "2026-01-25T15:42:42.001Z",
+      "role": "workflow:owner",
+      "workflowId": "fjZ_YITwFWg0xKJrFk_J3",
+      "projectId": "OE5UygYAfmxdsAr7",
+      "project": {
+        "updatedAt": "2025-11-17T16:10:22.285Z",
+        "createdAt": "2025-11-17T16:07:40.393Z",
+        "id": "OE5UygYAfmxdsAr7",
+        "name": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail <jan.alexander.herrmann.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+        "projectRelations": [
+          {
+            "updatedAt": "2025-11-17T16:07:40.393Z",
+            "createdAt": "2025-11-17T16:07:40.393Z",
+            "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+            "projectId": "OE5UygYAfmxdsAr7",
+            "user": {
+              "updatedAt": "2026-01-26T05:00:19.583Z",
+              "createdAt": "2025-11-17T16:07:38.239Z",
+              "id": "5872649b-7d4d-4dc6-bf08-cfedca6b155f",
+              "email": "jan.alexander.herrmann.hom@gmail.com",
+              "firstName": "Jan-Alexander",
+              "lastName": "Jan.Alexander.herrmann.hom@gmail",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2025-11-17T16:10:51.964Z",
+                "personalization_survey_n8n_version": "1.119.2",
+                "companySize": "<20",
+                "companyType": "systems-integrator",
+                "role": "business-owner",
+                "reportedSource": "google"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "Fl2F01hIt6DphtCw",
+                "userActivatedAt": 1763665359540,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1765391968130
+                },
+                "easyAIWorkflowOnboarded": true
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-01-26",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-01-25T16:35:56.180Z",
+    "createdAt": "2026-01-25T15:58:39.488Z",
+    "versionId": "dff9775f-b67e-48ed-894b-4c70410af906",
+    "workflowId": "fjZ_YITwFWg0xKJrFk_J3",
+    "nodes": [
+      {
+        "parameters": {
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "application/xml"
+                }
+              ]
+            },
+            "responseKey": "data"
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          -208,
+          624
+        ],
+        "id": "3d1c6b3f-a4f6-4075-b52e-482e2a5b0f22",
+        "name": "HOM Voicebot Response"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "c7001cd1-fef0-458d-ba13-ad75c9b648d8",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -224,
+          384
+        ],
+        "id": "21dea5a6-c085-417b-b9d6-89360a3a2de1",
+        "name": "HOM Voicebot Webhook",
+        "webhookId": "c7001cd1-fef0-458d-ba13-ad75c9b648d8"
+      },
+      {
+        "parameters": {
+          "options": {
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "application/xml"
+                }
+              ]
+            },
+            "responseKey": "data"
+          }
+        },
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.5,
+        "position": [
+          -224,
+          -64
+        ],
+        "id": "21083620-c4aa-421b-aff6-51be1bf372e0",
+        "name": "G Voicebot Response"
+      },
+      {
+        "parameters": {
+          "path": "59369a96-deed-4d19-b69b-f0e4392407e6",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -224,
+          144
+        ],
+        "id": "1e251d0a-0995-4861-81ae-937d366d9408",
+        "name": "G Voicebot Webhook",
+        "webhookId": "59369a96-deed-4d19-b69b-f0e4392407e6"
+      }
+    ],
+    "connections": {
+      "HOM Voicebot Webhook": {
+        "main": [
+          [
+            {
+              "node": "HOM Voicebot Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "G Voicebot Webhook": {
+        "main": [
+          [
+            {
+              "node": "G Voicebot Response",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Jan-Alexander Jan.Alexander.herrmann.hom@gmail",
+    "name": "Version dff9775f",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-01-25T16:35:56.167Z",
+        "id": 194,
+        "workflowId": "fjZ_YITwFWg0xKJrFk_J3",
+        "versionId": "dff9775f-b67e-48ed-894b-4c70410af906",
+        "event": "activated",
+        "userId": "5872649b-7d4d-4dc6-bf08-cfedca6b155f"
+      }
+    ]
+  }
+}
+
+
