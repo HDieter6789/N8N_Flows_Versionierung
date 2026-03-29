@@ -1,0 +1,164 @@
+{
+  "id": "EPUfsXVICoql7wqT",
+  "name": "Airtable ablegen",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -448,
+        0
+      ],
+      "id": "950afdd2-67e4-49f3-a775-dd9bd0abf8e7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appTp5gBBrEJM4lHb",
+          "mode": "list",
+          "cachedResultName": "Hotel Buchungen",
+          "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblau5Faf7VfDWKZP",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb/tblau5Faf7VfDWKZP"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "e4e75aba-3942-46ac-8eec-702b8f671009",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "TqrCtDGYlqKcVzWS",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "file:///C:/Users/ohlse/Desktop/Neuer%20Ordner/file.txt",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        -16
+      ],
+      "id": "d1da8dac-1139-4462-8b51-325fa45a41f8",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "fields.Name",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        0
+      ],
+      "id": "49f2c0fb-c66f-4fa0-8c03-d6313f483522",
+      "name": "Convert to File"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "f9d89fd0-cf12-4e28-99f1-0f7ee52ee471",
+  "activeVersionId": null,
+  "versionCounter": 22,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-28T17:15:09.058Z",
+      "createdAt": "2026-03-28T17:15:09.058Z",
+      "role": "workflow:owner",
+      "workflowId": "EPUfsXVICoql7wqT",
+      "projectId": "pdXrHuiVvp9F1fDE",
+      "project": {
+        "updatedAt": "2025-11-18T18:05:08.560Z",
+        "createdAt": "2025-11-18T17:59:43.858Z",
+        "id": "pdXrHuiVvp9F1fDE",
+        "name": "Sebastian Ohl <s.ohl.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "68ba2345-aeca-45cd-9df8-5cc664ff8036"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}
+
+
