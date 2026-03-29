@@ -1,0 +1,316 @@
+{
+  "id": "KBQTWZPVtjwI54tB",
+  "name": "Test Hotel",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Zimmer",
+        "formDescription": "Welches Zimmer gefällt ihnen?",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Dein Name",
+              "placeholder": "Hier dein Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Welches Zimmer gefällt Ihnen",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "Standard Zimmer"
+                  },
+                  {
+                    "option": "Premium Zimmer "
+                  },
+                  {
+                    "option": "Business Zimmer"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "72492fb7-fb7b-4c4d-9aff-b8033442763e",
+      "name": "On form submission",
+      "webhookId": "492fcb26-3065-4f76-8d62-af05dc214c42"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appTp5gBBrEJM4lHb",
+          "mode": "list",
+          "cachedResultName": "Hotel Buchungen",
+          "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblau5Faf7VfDWKZP",
+          "mode": "list",
+          "cachedResultName": "Table 1",
+          "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb/tblau5Faf7VfDWKZP"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json['Dein Name'] }}",
+            "Zimmer": "={{ $json['Welches Zimmer gefällt Ihnen'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Zimmer",
+              "displayName": "Zimmer",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "b5390b6a-4356-461b-94c7-366dd7d85889",
+      "name": "Create a record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "TqrCtDGYlqKcVzWS",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Create a record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Berlin",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "a3f8ac4b-f8f7-41d5-b356-12efb0681a0c",
+  "activeVersionId": "a3f8ac4b-f8f7-41d5-b356-12efb0681a0c",
+  "versionCounter": 42,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-28T15:17:14.661Z",
+      "createdAt": "2026-03-28T15:17:14.661Z",
+      "role": "workflow:owner",
+      "workflowId": "KBQTWZPVtjwI54tB",
+      "projectId": "pdXrHuiVvp9F1fDE",
+      "project": {
+        "updatedAt": "2025-11-18T18:05:08.560Z",
+        "createdAt": "2025-11-18T17:59:43.858Z",
+        "id": "pdXrHuiVvp9F1fDE",
+        "name": "Sebastian Ohl <s.ohl.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "68ba2345-aeca-45cd-9df8-5cc664ff8036"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-28T17:14:44.459Z",
+    "createdAt": "2026-03-28T16:58:12.985Z",
+    "versionId": "a3f8ac4b-f8f7-41d5-b356-12efb0681a0c",
+    "workflowId": "KBQTWZPVtjwI54tB",
+    "nodes": [
+      {
+        "parameters": {
+          "formTitle": "Zimmer",
+          "formDescription": "Welches Zimmer gefällt ihnen?",
+          "formFields": {
+            "values": [
+              {
+                "fieldLabel": "Dein Name",
+                "placeholder": "Hier dein Name",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Welches Zimmer gefällt Ihnen",
+                "fieldType": "dropdown",
+                "fieldOptions": {
+                  "values": [
+                    {
+                      "option": "Standard Zimmer"
+                    },
+                    {
+                      "option": "Premium Zimmer "
+                    },
+                    {
+                      "option": "Business Zimmer"
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.formTrigger",
+        "typeVersion": 2.5,
+        "position": [
+          0,
+          0
+        ],
+        "id": "72492fb7-fb7b-4c4d-9aff-b8033442763e",
+        "name": "On form submission",
+        "webhookId": "492fcb26-3065-4f76-8d62-af05dc214c42"
+      },
+      {
+        "parameters": {
+          "operation": "create",
+          "base": {
+            "__rl": true,
+            "value": "appTp5gBBrEJM4lHb",
+            "mode": "list",
+            "cachedResultName": "Hotel Buchungen",
+            "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb"
+          },
+          "table": {
+            "__rl": true,
+            "value": "tblau5Faf7VfDWKZP",
+            "mode": "list",
+            "cachedResultName": "Table 1",
+            "cachedResultUrl": "https://airtable.com/appTp5gBBrEJM4lHb/tblau5Faf7VfDWKZP"
+          },
+          "columns": {
+            "mappingMode": "defineBelow",
+            "value": {
+              "Name": "={{ $json['Dein Name'] }}",
+              "Zimmer": "={{ $json['Welches Zimmer gefällt Ihnen'] }}"
+            },
+            "matchingColumns": [],
+            "schema": [
+              {
+                "id": "Name",
+                "displayName": "Name",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              },
+              {
+                "id": "Zimmer",
+                "displayName": "Zimmer",
+                "required": false,
+                "defaultMatch": false,
+                "canBeUsedToMatch": true,
+                "display": true,
+                "type": "string",
+                "readOnly": false,
+                "removed": false
+              }
+            ],
+            "attemptToConvertTypes": false,
+            "convertFieldsToString": false
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.airtable",
+        "typeVersion": 2.2,
+        "position": [
+          208,
+          0
+        ],
+        "id": "b5390b6a-4356-461b-94c7-366dd7d85889",
+        "name": "Create a record",
+        "credentials": {
+          "airtableTokenApi": {
+            "id": "TqrCtDGYlqKcVzWS",
+            "name": "Airtable Personal Access Token account"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "On form submission": {
+        "main": [
+          [
+            {
+              "node": "Create a record",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Sebastian Ohl",
+    "name": "Test Hotel Buchungen",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-28T17:14:44.450Z",
+        "id": 227,
+        "workflowId": "KBQTWZPVtjwI54tB",
+        "versionId": "a3f8ac4b-f8f7-41d5-b356-12efb0681a0c",
+        "event": "activated",
+        "userId": "68ba2345-aeca-45cd-9df8-5cc664ff8036"
+      }
+    ]
+  }
+}
+
+
