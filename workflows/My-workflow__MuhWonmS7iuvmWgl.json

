@@ -1,0 +1,83 @@
+{
+  "id": "MuhWonmS7iuvmWgl",
+  "name": "My workflow",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "authentication": "airtableTokenApi",
+        "baseId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "tableId": {
+          "__rl": true,
+          "mode": "url",
+          "value": ""
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.airtableTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c88861b2-539b-4b60-ae47-5ffa3637f13b",
+      "name": "Airtable Trigger",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "TqrCtDGYlqKcVzWS",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "0f3a7a03-0766-4101-8196-61f6bb4c50aa",
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-28T18:21:04.153Z",
+      "createdAt": "2026-03-28T18:21:04.153Z",
+      "role": "workflow:owner",
+      "workflowId": "MuhWonmS7iuvmWgl",
+      "projectId": "pdXrHuiVvp9F1fDE",
+      "project": {
+        "updatedAt": "2025-11-18T18:05:08.560Z",
+        "createdAt": "2025-11-18T17:59:43.858Z",
+        "id": "pdXrHuiVvp9F1fDE",
+        "name": "Sebastian Ohl <s.ohl.hom@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "68ba2345-aeca-45cd-9df8-5cc664ff8036"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": null
+}
+
+
